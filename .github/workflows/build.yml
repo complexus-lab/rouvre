@@ -84,6 +84,18 @@ jobs:
           bad=1
         fi
         nm "$app/Contents/MacOS/Rouvre" | grep -q ' [Tt] _libiconv_open$' || { echo "::error::GNU libiconv is not linked into Rouvre"; bad=1; }
+        # No executable in the bundle may name a host of the upstream project.
+        # The bundle index server is the one exception until Rouvre publishes
+        # its own index (docs/INDEPENDENCE.md, phase 2).
+        while IFS= read -r -d '' f; do
+          file -b "$f" | grep -q 'Mach-O' || continue
+          hosts="$(strings -a "$f" | grep -Eio '[a-z0-9.-]*(macromates\.com|textmate\.org)' | grep -vix 'api\.textmate\.org' | sort -u || true)"
+          if [ -n "$hosts" ]; then
+            echo "::error::${f#$app/} names upstream hosts:"
+            echo "$hosts"
+            bad=1
+          fi
+        done < <(find "$app" -type f -print0)
         exit $bad
 
     # ditto keeps symlinks, permissions and the code signature intact.
