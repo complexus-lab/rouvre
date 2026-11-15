@@ -7,7 +7,7 @@ excludeDirectoriesInFileChooser  = '{bin/CxxTest,build,SyntaxMate.tmBundle}'
 excludeDirectoriesInFolderSearch = '{bin/CxxTest,build,SyntaxMate.tmBundle}'
 
 # Variables
-TM_ORGANIZATION_NAME = 'Rouvre contributors'
+TM_ORGANIZATION_NAME = 'Complexus Lab'
 
 TM_TODO_IGNORE       = '/(build|CxxTest|PlugIns|vendor)/|\.(md|html)$'
 TM_BUILD_DIR         = '${builddir:-$HOME/build/${CWD/.*\///}}'

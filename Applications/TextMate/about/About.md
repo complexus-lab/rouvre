@@ -2,7 +2,7 @@ Title: About Rouvre
 
 ## Rouvre version <script>document.write(TextMate.version)</script>
 
-Rouvre is an independent fork of the TextMate 2 source code, maintained at <https://github.com/thierrysays/rouvre>. It has no affiliation with the original publisher or author.
+Rouvre is a [Complexus Lab](https://complexuslab.fr) project: an independent fork of the TextMate 2 source code, maintained at <https://github.com/thierrysays/rouvre>. It has no affiliation with the original publisher or author.
 
 The user manual is available from the Help menu. It was written for TextMate 2 and describes the same features.
 
