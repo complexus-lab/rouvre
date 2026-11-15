@@ -109,7 +109,7 @@ void test_xml_markup ()
 // dictionary holds so the spelling tests only run where it answers.
 static bool spell_checker_available ()
 {
-	static bool const available = ns::is_misspelled("qzxvkjw", "en");
+	static bool const available = ns::is_misspelled(std::string("qzxvkjw"), "en");
 	static std::once_flag flag;
 	if(!available)
 		std::call_once(flag, []{ OAK_WARN("Skipping spelling tests (system spell checker reports no misspellings)"); });
