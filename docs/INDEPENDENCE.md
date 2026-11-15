@@ -28,13 +28,13 @@ Inventory taken on `main` at commit `f719f92e`.
 | Help book “TextMate 2 Help”, JavaScript object `TextMate`, directory `Applications/TextMate` | resources and source tree | Low |
 | Release script of the upstream author | `local-orig.rave` | Low |
 
-Already done: the application name, bundle identifier, icon and data folder; software update and crash reporting switched off; GNU libiconv bundled; minimum system raised to macOS 15.
+Already done: the application name, bundle identifier, icon and data folder; software update and crash reporting switched off; GNU libiconv bundled; minimum system raised to macOS 15; unit tests running on CI.
 
 ## Phases
 
-### Phase 0 — Foundation
+### Phase 0 — Foundation (done)
 
-Merge the unit test work once it is green. Every later phase changes code those tests cover.
+The unit tests build and run on CI. Every later phase changes code those tests cover.
 
 ### Phase 1 — Cut the network ties
 
