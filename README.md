@@ -30,16 +30,17 @@ Use the [issue tracker](https://github.com/thierrysays/rouvre/issues) for bug re
  * [multimarkdown][]    — marked-up plain text compiler
  * [ninja][]            — build system similar to `make`
  * [ragel][]            — state machine compiler
+ * [GNU libiconv][libiconv] — character set conversion, linked statically
  * [sparsehash][]       — a cache friendly `hash_map`
 
 All of these can be installed with either [Homebrew][] or [MacPorts][]:
 
 ```sh
 # Homebrew
-brew install boost capnp google-sparsehash multimarkdown ninja ragel
+brew install boost capnp google-sparsehash libiconv multimarkdown ninja ragel
 
 # MacPorts
-sudo port install boost capnproto multimarkdown ninja ragel sparsehash
+sudo port install boost capnproto libiconv multimarkdown ninja ragel sparsehash
 ```
 
 ### Build
@@ -61,6 +62,8 @@ PREFIX=/some/prefix ./configure
 ```
 
 Cap’n Proto is linked statically when its archives (`libcapnp.a`, `libkj.a`) are present, through a `.static-libs` directory created by `./configure`, so that the application runs on machines where the library is not installed.
+
+GNU libiconv is required and always linked statically, in place of the conversion library of the system: the one shipped with current macOS transliterates differently, which would make saved files depend on the OS version. It is looked up in `ICONV_PREFIX`, then in Homebrew’s `opt/libiconv`, then in the dependency prefix.
 
 The detected paths are written to `local.rave`. Delete that file to run the detection again; if it exists, `./configure` leaves it untouched.
 
@@ -124,6 +127,7 @@ The code inherited from upstream is copyright MacroMates Ltd. and the upstream c
 [ragel]:         https://www.colm.net/open-source/ragel/
 [capnp]:         https://capnproto.org/
 [sparsehash]:    https://github.com/sparsehash/sparsehash
+[libiconv]:      https://www.gnu.org/software/libiconv/
 [Homebrew]:      https://brew.sh/
 [MacPorts]:      https://www.macports.org/
 [NinjaBundle]:   https://github.com/textmate/ninja.tmbundle

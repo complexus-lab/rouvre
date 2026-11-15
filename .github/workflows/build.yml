@@ -31,7 +31,7 @@ jobs:
         uname -m
 
     - name: Dependencies
-      run: brew install boost capnp google-sparsehash multimarkdown ninja ragel
+      run: brew install boost capnp google-sparsehash libiconv multimarkdown ninja ragel
 
     # The scm tests exercise the Mercurial and Subversion drivers.
     - name: Test dependencies
@@ -72,6 +72,13 @@ jobs:
           fi
         done < <(find "$app" -type f -print0)
         otool -L "$app/Contents/MacOS/Rouvre"
+        # Text conversion must come from the bundled GNU libiconv, not from
+        # the iconv of the system.
+        if nm -u "$app/Contents/MacOS/Rouvre" | grep -E '_(lib)?iconv'; then
+          echo "::error::Rouvre still imports iconv symbols from a shared library"
+          bad=1
+        fi
+        nm "$app/Contents/MacOS/Rouvre" | grep -q ' [Tt] _libiconv_open$' || { echo "::error::GNU libiconv is not linked into Rouvre"; bad=1; }
         exit $bad
 
     # ditto keeps symlinks, permissions and the code signature intact.
