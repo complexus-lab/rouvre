@@ -144,7 +144,7 @@ static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 								{
 									UNMutableNotificationContent* content = [[UNMutableNotificationContent alloc] init];
 									content.title    = @"Crash Report Sent";
-									content.body     = @"Diagnostic information has been sent to MacroMates.com regarding your last crash.";
+									content.body     = @"Diagnostic information has been sent regarding your last crash.";
 									content.userInfo = @{ @"path": reportPath, @"url": locationURLString };
 
 									UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:[NSUUID UUID].UUIDString content:content trigger:nil];
@@ -163,7 +163,7 @@ static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 						{
 							NSUserNotification* notification = [[NSUserNotification alloc] init];
 							notification.title           = @"Crash Report Sent";
-							notification.informativeText = @"Diagnostic information has been sent to MacroMates.com regarding your last crash.";
+							notification.informativeText = @"Diagnostic information has been sent regarding your last crash.";
 							notification.userInfo        = @{ @"path": reportPath, @"url": locationURLString };
 							[NSUserNotificationCenter.defaultUserNotificationCenter deliverNotification:notification];
 						}

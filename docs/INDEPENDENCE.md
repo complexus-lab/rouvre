@@ -20,7 +20,6 @@ Inventory taken on `main` at commit `f719f92e`.
 |---|---|---|
 | Bundle index fetched from `api.textmate.org` | `default.rave` (`REST_API`), `Frameworks/BundlesManager/src/BundlesManager.mm`, `Frameworks/updater/src/updater.cc` | Blocking: used at run time and at build time |
 | Signing keys of the upstream team compiled in | `BundlesManager.mm`, `publicKeys` | Blocking |
-| License module: DNS query to `bl.textmate.org`, link to `shop.macromates.com`, keychain item “TextMate license” | `Frameworks/license` | High: outgoing network request |
 | Seven submodules, six of them under `github.com/textmate` | `.gitmodules` | High: supply chain |
 | Document icons carrying the upstream brand | `Applications/TextMate/icons` submodule | Medium |
 | File types exported as `com.macromates.textmate.*` | `Applications/TextMate/Info.plist` | Medium |
@@ -28,7 +27,7 @@ Inventory taken on `main` at commit `f719f92e`.
 | Help book “TextMate 2 Help”, JavaScript object `TextMate`, directory `Applications/TextMate` | resources and source tree | Low |
 | Release script of the upstream author | `local-orig.rave` | Low |
 
-Already done: the application name, bundle identifier, icon and data folder; software update and crash reporting switched off; GNU libiconv bundled; minimum system raised to macOS 15; unit tests running on CI.
+Already done: the application name, bundle identifier, icon and data folder; software update and crash reporting switched off; license module removed; GNU libiconv bundled; minimum system raised to macOS 15; unit tests running on CI.
 
 ## Phases
 
@@ -36,14 +35,22 @@ Already done: the application name, bundle identifier, icon and data folder; sof
 
 The unit tests build and run on CI. Every later phase changes code those tests cover.
 
-### Phase 1 — Cut the network ties
+### Phase 1 — Cut the network ties (partly done)
 
 Goal: no request from Rouvre goes to `textmate.org` or `macromates.com`.
 
-- Remove the license module. Rouvre is free software, registration has no purpose, and the blacklist lookup contacts a third-party server.
-- Replace `REST_API` with a configurable base URL that points to complexuslab.fr.
-- Remove the upstream public keys and the “Submit to MacroMates” preference.
-- Add a CI check that fails when an upstream host name appears in the built application.
+Done:
+
+- The license module is removed, with its DNS lookup under `bl.textmate.org`, its link to the upstream shop and its keychain item.
+- The crash report submission preference is removed.
+- The bundle server is a build setting (`BUNDLE_SERVER` in `default.rave`).
+- CI fails when an executable of the bundle names an upstream host other than the bundle server.
+
+Waiting for phase 2, because the bundle index is needed at build time and at run time and Rouvre does not publish one yet:
+
+- Point `BUNDLE_SERVER` at complexuslab.fr.
+- Remove the upstream public keys.
+- Drop the exception for the bundle server from the CI check.
 
 ### Phase 2 — Hosting on complexuslab.fr
 
