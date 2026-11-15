@@ -124,7 +124,7 @@ jobs:
       run: |
         set -euo pipefail
         mkdir -p site/rouvre/bundles
-        cp mirror/index.plist mirror/index.plist.sig site/rouvre/bundles/
+        cp mirror/index.plist mirror/index.plist.sig mirror/index.html site/rouvre/bundles/
         cd site
         git add rouvre/bundles
         if git diff --cached --quiet; then
