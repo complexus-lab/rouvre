@@ -42,7 +42,10 @@ import urllib.error
 import urllib.request
 
 UPSTREAM = "https://api.textmate.org/bundles"
-USER_AGENT = "Rouvre bundle mirror (+https://complexuslab.fr/rouvre/)"
+# The bundle server answers 500 to user agents that do not follow the form
+# the editor sends: name/version/host-uuid os-version/machine/model/cpus.
+# The host UUID is left blank; the model field names the mirror.
+USER_AGENT = os.environ.get("MIRROR_USER_AGENT", "Rouvre/1.0/00000000-0000-0000-0000-000000000000 15.0.0/x86_64/RouvreBundleMirror/1")
 SIGNEE_HEADER = "x-amz-meta-x-signee"
 SIGNATURE_HEADER = "x-amz-meta-x-signature"
 
@@ -200,7 +203,8 @@ def fetch(url, attempts=4):
 				return res.read(), {k.lower(): v for k, v in res.headers.items()}
 		except urllib.error.HTTPError as e:
 			if e.code < 500 or attempt == attempts:
-				raise
+				body = e.read(400).decode("utf-8", "replace") if e.fp else ""
+				raise RuntimeError("%s: HTTP %d %s%s" % (url, e.code, e.reason, (": " + body.strip()) if body.strip() else "")) from e
 		except (urllib.error.URLError, TimeoutError, ConnectionError):
 			if attempt == attempts:
 				raise
@@ -325,8 +329,8 @@ def mirror(args):
 				v = latest_version(b)
 				if v and v.get("sha256"):
 					previous[(b.get("uuid"), v.get("upstreamUpdated", v.get("updated")))] = v
-		except urllib.error.HTTPError as e:
-			if e.code != 404:
+		except RuntimeError as e:
+			if "HTTP 404" not in str(e):
 				raise
 
 	archives = os.path.join(args.out, "archives")
