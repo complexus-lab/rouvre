@@ -5,6 +5,7 @@
 #include <io/path.h>
 #include <text/format.h>
 #include <settings/settings.h>
+#include <oak/run_loop.h>
 
 namespace scm
 {
@@ -411,6 +412,7 @@ namespace scm
 			CFRunLoopStop(runLoop);
 		});
 
+		oak::keep_run_loop_waiting_t keepWaiting;
 		while(shouldWait)
 			CFRunLoopRun();
 

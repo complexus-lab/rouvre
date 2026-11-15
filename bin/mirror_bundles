@@ -1,0 +1,441 @@
+#!/usr/bin/env python3
+"""Mirror the bundles listed in an upstream bundle index.
+
+Usage:
+  bin/mirror_bundles measure [--upstream URL]
+  bin/mirror_bundles mirror --out DIR --asset-base URL [--upstream URL]
+                            [--previous URL] [--key PEM]
+
+measure  Fetch the upstream index and report how many bundles it lists
+         and the total size of their archives. Downloads no archive.
+
+mirror   Download every archive listed in the upstream index into
+         DIR/archives, check each against the upstream signature when the
+         server sends one, and write DIR/index.plist: the upstream index
+         with each download URL pointing to ASSET_BASE/<file>, the SHA-256
+         digest and the upstream URL of every archive, and the upstream
+         signing keys removed. With --key, also write DIR/index.plist.sig,
+         the raw Ed25519 signature of index.plist.
+
+         With --previous, archives whose bundle and update date are already
+         in that Rouvre index are not downloaded again: their entry is
+         copied, so the files already published stay in use.
+
+The index is the property list served by the upstream bundle server: a
+dictionary with a "bundles" array and, optionally, a "keys" array of
+{identity, publicKey}. Servers send it as XML or as an old-style ASCII
+property list; both are read.
+"""
+
+import argparse
+import base64
+import hashlib
+import json
+import os
+import plistlib
+import re
+import subprocess
+import sys
+import tempfile
+import time
+
+UPSTREAM = "https://api.textmate.org/bundles"
+# The bundle server answers 500 to user agents that do not follow the form
+# the editor sends: name/version/host-uuid os-version/machine/model/cpus.
+# The host UUID is left blank; the model field names the mirror.
+USER_AGENT = os.environ.get("MIRROR_USER_AGENT", "Rouvre/1.0/00000000-0000-0000-0000-000000000000 15.0.0/x86_64/RouvreBundleMirror/1")
+SIGNEE_HEADER = "x-amz-meta-x-signee"
+SIGNATURE_HEADER = "x-amz-meta-x-signature"
+
+
+# =========================
+# = ASCII property lists  =
+# =========================
+
+class AsciiPlistError(ValueError):
+	pass
+
+
+def parse_ascii_plist(text):
+	"""Parse an old-style (NeXTSTEP) property list."""
+	pos = 0
+	n = len(text)
+
+	def skip():
+		nonlocal pos
+		while pos < n:
+			c = text[pos]
+			if c.isspace():
+				pos += 1
+			elif text.startswith("//", pos):
+				end = text.find("\n", pos)
+				pos = n if end == -1 else end + 1
+			elif text.startswith("/*", pos):
+				end = text.find("*/", pos + 2)
+				if end == -1:
+					raise AsciiPlistError("unterminated comment")
+				pos = end + 2
+			else:
+				break
+
+	def expect(ch):
+		nonlocal pos
+		skip()
+		if pos >= n or text[pos] != ch:
+			raise AsciiPlistError("expected %r at offset %d" % (ch, pos))
+		pos += 1
+
+	escapes = {"a": "\a", "b": "\b", "f": "\f", "n": "\n", "r": "\r", "t": "\t", "v": "\v", '"': '"', "'": "'", "\\": "\\", "\n": "\n"}
+
+	def quoted(q):
+		nonlocal pos
+		pos += 1
+		out = []
+		while True:
+			if pos >= n:
+				raise AsciiPlistError("unterminated string")
+			c = text[pos]
+			if c == q:
+				pos += 1
+				return "".join(out)
+			if c == "\\":
+				pos += 1
+				e = text[pos] if pos < n else ""
+				if e in escapes:
+					out.append(escapes[e])
+					pos += 1
+				elif e in "uU":
+					out.append(chr(int(text[pos + 1:pos + 5], 16)))
+					pos += 5
+				elif e.isdigit():
+					m = re.match(r"[0-7]{1,3}", text[pos:])
+					out.append(chr(int(m.group(0), 8)))
+					pos += len(m.group(0))
+				else:
+					out.append(e)
+					pos += 1
+			else:
+				out.append(c)
+				pos += 1
+
+	def value():
+		nonlocal pos
+		skip()
+		if pos >= n:
+			raise AsciiPlistError("unexpected end of input")
+		c = text[pos]
+		if c == "{":
+			pos += 1
+			d = {}
+			while True:
+				skip()
+				if pos < n and text[pos] == "}":
+					pos += 1
+					return d
+				k = value()
+				if not isinstance(k, str):
+					raise AsciiPlistError("dictionary key is not a string at offset %d" % pos)
+				expect("=")
+				d[k] = value()
+				expect(";")
+		if c == "(":
+			pos += 1
+			a = []
+			skip()
+			if pos < n and text[pos] == ")":
+				pos += 1
+				return a
+			while True:
+				a.append(value())
+				skip()
+				if pos < n and text[pos] == ",":
+					pos += 1
+					skip()
+					if pos < n and text[pos] == ")":
+						pos += 1
+						return a
+					continue
+				expect(")")
+				return a
+		if c == "<":
+			end = text.find(">", pos)
+			if end == -1:
+				raise AsciiPlistError("unterminated data")
+			hexdigits = re.sub(r"\s", "", text[pos + 1:end])
+			pos = end + 1
+			return bytes.fromhex(hexdigits)
+		if c in "\"'":
+			return quoted(c)
+		m = re.compile(r"[A-Za-z0-9_$+/:.\-]+").match(text, pos)
+		if not m:
+			raise AsciiPlistError("unexpected %r at offset %d" % (c, pos))
+		pos = m.end()
+		return m.group(0)
+
+	result = value()
+	skip()
+	if pos != n:
+		raise AsciiPlistError("trailing content at offset %d" % pos)
+	return result
+
+
+def load_plist(data):
+	"""Return the parsed index and the name of its format."""
+	try:
+		return plistlib.loads(data), "xml/binary"
+	except Exception:
+		pass
+	return parse_ascii_plist(data.decode("utf-8")), "ascii"
+
+
+# ===========
+# = Network =
+# ===========
+
+def fetch(url, attempts=4):
+	"""Return (body, headers) for url, retrying transient failures.
+
+	Uses curl the way the editor's own network code does (same headers,
+	compressed transfer): the upstream bundle server fails with a PHP error
+	on requests that lack the headers curl sends.
+	"""
+	for attempt in range(1, attempts + 1):
+		with tempfile.TemporaryDirectory() as tmp:
+			head, body = os.path.join(tmp, "head"), os.path.join(tmp, "body")
+			res = subprocess.run(["curl", "-sS", "-L", "--compressed", "--max-time", "120", "-A", USER_AGENT,
+				"-D", head, "-o", body, "-w", "%{http_code}", url], capture_output=True, text=True)
+			code = int(res.stdout.strip() or 0) if res.stdout.strip().isdigit() else 0
+			if res.returncode == 0 and 200 <= code < 300:
+				headers = {}
+				with open(head, encoding="latin-1") as f:
+					for line in f:
+						if line.lower().startswith("http/"):
+							headers = {}  # keep the headers of the last response after redirects
+						elif ":" in line:
+							k, v = line.split(":", 1)
+							headers[k.strip().lower()] = v.strip()
+				with open(body, "rb") as f:
+					return f.read(), headers
+			if res.returncode == 0 and code < 500 or attempt == attempts:
+				detail = ""
+				if os.path.exists(body):
+					with open(body, "rb") as f:
+						detail = re.sub(r"<[^>]+>", " ", f.read(600).decode("utf-8", "replace"))
+						detail = re.sub(r"\s+", " ", detail).strip()
+				raise RuntimeError("%s: %s%s" % (url, ("HTTP %d" % code) if code else res.stderr.strip(), (": " + detail) if detail else ""))
+		time.sleep(2 ** attempt)
+
+
+# ==============
+# = Signatures =
+# ==============
+
+def upstream_keys(index):
+	return {k.get("identity"): k.get("publicKey") for k in index.get("keys", []) if isinstance(k, dict)}
+
+
+def verify_upstream(data, headers, keys):
+	"""Check data against the upstream signature headers.
+
+	Returns "verified", "unsigned" or "unknown signee"; raises on a bad
+	signature. Upstream signs with DSA over SHA-1.
+	"""
+	signee, signature = headers.get(SIGNEE_HEADER), headers.get(SIGNATURE_HEADER)
+	if not signee or not signature:
+		return "unsigned"
+	key = keys.get(signee)
+	if not key:
+		return "unknown signee"
+	with tempfile.TemporaryDirectory() as tmp:
+		paths = {name: os.path.join(tmp, name) for name in ("key.pem", "sig", "data")}
+		with open(paths["key.pem"], "w") as f:
+			f.write(key if key.endswith("\n") else key + "\n")
+		with open(paths["sig"], "wb") as f:
+			f.write(base64.b64decode(signature))
+		with open(paths["data"], "wb") as f:
+			f.write(data)
+		res = subprocess.run(["openssl", "dgst", "-sha1", "-verify", paths["key.pem"], "-signature", paths["sig"], paths["data"]], capture_output=True, text=True)
+		if res.returncode != 0:
+			raise RuntimeError("bad upstream signature from %s: %s" % (signee, (res.stdout + res.stderr).strip()))
+	return "verified"
+
+
+def sign(path, key):
+	"""Write path + '.sig', the raw Ed25519 signature of the file."""
+	subprocess.run(["openssl", "pkeyutl", "-sign", "-inkey", key, "-rawin", "-in", path, "-out", path + ".sig"], check=True)
+
+
+# ===========
+# = Helpers =
+# ===========
+
+def latest_version(bundle):
+	versions = bundle.get("versions") or []
+	return versions[0] if versions and isinstance(versions[0], dict) else None
+
+
+def asset_name(bundle, version):
+	"""A stable file name that changes when the bundle is updated."""
+	stamp = re.sub(r"[^0-9A-Za-z]+", "", str(version.get("updated", "")))[:14] or "0"
+	return "%s-%s.tbz" % (bundle["uuid"].upper(), stamp)
+
+
+def summary(lines):
+	text = "\n".join(lines) + "\n"
+	sys.stdout.write(text)
+	if os.environ.get("GITHUB_STEP_SUMMARY"):
+		with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+			f.write(text)
+
+
+def human(size):
+	for unit in ("B", "KB", "MB", "GB"):
+		if size < 1024 or unit == "GB":
+			return "%.1f %s" % (size, unit) if unit != "B" else "%d B" % size
+		size /= 1024
+
+
+# ============
+# = Commands =
+# ============
+
+def measure(args):
+	data, headers = fetch(args.upstream)
+	index, fmt = load_plist(data)
+	status = verify_upstream(data, headers, upstream_keys(index))
+	bundles = index.get("bundles", [])
+	sizes = [int(v.get("size", 0) or 0) for v in map(latest_version, bundles) if v]
+	no_size = sum(1 for v in map(latest_version, bundles) if not v or not v.get("size"))
+	largest = sorted(((int(latest_version(b).get("size", 0) or 0), b.get("name", "?")) for b in bundles if latest_version(b)), reverse=True)[:10]
+	summary([
+		"### Upstream bundle index",
+		"",
+		"| | |",
+		"|---|---|",
+		"| URL | %s |" % args.upstream,
+		"| Format | %s, %s |" % (fmt, human(len(data))),
+		"| Signature | %s |" % status,
+		"| Bundles | %d |" % len(bundles),
+		"| Default bundles (`isDefault`) | %d |" % sum(1 for b in bundles if str(b.get("isDefault", "")).lower() in ("1", "true", "yes")),
+		"| Total size of the latest archives | %s |" % human(sum(sizes)),
+		"| Bundles without a size | %d |" % no_size,
+		"",
+		"Largest archives:",
+		"",
+	] + ["- %s: %s" % (name, human(size)) for size, name in largest])
+	if args.json:
+		with open(args.json, "w") as f:
+			json.dump({"bundles": len(bundles), "total_size": sum(sizes), "format": fmt, "signature": status}, f)
+
+
+def mirror(args):
+	data, headers = fetch(args.upstream)
+	index, fmt = load_plist(data)
+	keys = upstream_keys(index)
+	status = verify_upstream(data, headers, keys)
+	if status == "unknown signee":
+		raise RuntimeError("the upstream index is signed by an unknown key")
+
+	previous = {}
+	if args.previous:
+		try:
+			prev_data, _ = fetch(args.previous)
+			for b in load_plist(prev_data)[0].get("bundles", []):
+				v = latest_version(b)
+				if v and v.get("sha256"):
+					previous[(b.get("uuid"), v.get("upstreamUpdated", v.get("updated")))] = v
+		except RuntimeError as e:
+			if "HTTP 404" not in str(e):
+				raise
+
+	archives = os.path.join(args.out, "archives")
+	os.makedirs(archives, exist_ok=True)
+
+	out_bundles, downloaded, reused, failed = [], 0, 0, []
+	for bundle in index.get("bundles", []):
+		version = latest_version(bundle)
+		if not version or not bundle.get("uuid") or not version.get("url"):
+			failed.append((bundle.get("name", "?"), "no download URL"))
+			continue
+
+		entry = dict(bundle)
+		key = (bundle["uuid"], version.get("updated"))
+		if key in previous:
+			entry["versions"] = [dict(previous[key])]
+			reused += 1
+		else:
+			try:
+				blob, blob_headers = fetch(version["url"])
+				blob_status = verify_upstream(blob, blob_headers, keys)
+			except Exception as e:
+				failed.append((bundle.get("name", "?"), str(e)))
+				continue
+			name = asset_name(bundle, version)
+			with open(os.path.join(archives, name), "wb") as f:
+				f.write(blob)
+			mirrored = dict(version)
+			mirrored.update({
+				"url":             args.asset_base.rstrip("/") + "/" + name,
+				"size":            len(blob),
+				"sha256":          hashlib.sha256(blob).hexdigest(),
+				"upstreamURL":     version["url"],
+				"upstreamUpdated": version.get("updated"),
+				"upstreamSignature": blob_status,
+			})
+			entry["versions"] = [mirrored]
+			downloaded += 1
+		out_bundles.append(entry)
+
+	result = {k: v for k, v in index.items() if k != "keys"}
+	result["bundles"] = out_bundles
+	result["mirror"] = {
+		"source":  args.upstream,
+		"created": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+		"note":    "Mirror of the bundle index published by the upstream project. Each archive is kept as published there; licenses are those of each bundle.",
+	}
+
+	path = os.path.join(args.out, "index.plist")
+	with open(path, "wb") as f:
+		plistlib.dump(result, f, sort_keys=True)
+	if args.key:
+		sign(path, args.key)
+
+	summary([
+		"### Bundle mirror",
+		"",
+		"| | |",
+		"|---|---|",
+		"| Upstream index | %s, signature %s |" % (fmt, status),
+		"| Bundles in the mirror | %d |" % len(out_bundles),
+		"| Downloaded | %d |" % downloaded,
+		"| Reused from the previous mirror | %d |" % reused,
+		"| Failed | %d |" % len(failed),
+	] + (["", "Failures:", ""] + ["- %s: %s" % f for f in failed] if failed else []))
+
+	# A partial mirror would drop bundles from installed copies' lists.
+	if failed and not args.allow_failures:
+		sys.exit(1)
+
+
+def main():
+	p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+	sub = p.add_subparsers(dest="command", required=True)
+
+	m = sub.add_parser("measure")
+	m.add_argument("--upstream", default=UPSTREAM)
+	m.add_argument("--json")
+
+	r = sub.add_parser("mirror")
+	r.add_argument("--upstream", default=UPSTREAM)
+	r.add_argument("--out", required=True)
+	r.add_argument("--asset-base", required=True)
+	r.add_argument("--previous")
+	r.add_argument("--key")
+	r.add_argument("--allow-failures", action="store_true")
+
+	args = p.parse_args()
+	{"measure": measure, "mirror": mirror}[args.command](args)
+
+
+if __name__ == "__main__":
+	main()

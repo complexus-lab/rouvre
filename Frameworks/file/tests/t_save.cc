@@ -2,6 +2,7 @@
 #include <io/path.h>
 #include <text/hexdump.h>
 #include <test/jail.h>
+#include <oak/run_loop.h>
 
 struct stall_t : file::save_callback_t
 {
@@ -32,6 +33,7 @@ struct stall_t : file::save_callback_t
 
 	void wait ()
 	{
+		oak::keep_run_loop_waiting_t keepWaiting;
 		while(_should_wait)
 			CFRunLoopRun();
 	}

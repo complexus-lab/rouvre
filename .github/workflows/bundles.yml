@@ -1,0 +1,136 @@
+name: Bundle mirror
+
+# Mirrors every bundle of the upstream index (docs/INDEPENDENCE.md, “Bundles:
+# full mirror”). Archives are attached to the `bundles` release of this
+# repository; the signed index is committed to the site repository, whose own
+# workflow deploys it to https://complexuslab.fr/rouvre/bundles/.
+
+on:
+  pull_request:
+    paths:
+      - bin/mirror_bundles
+      - .github/workflows/bundles.yml
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Upload the archives and publish the signed index
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bundle-mirror
+  cancel-in-progress: false
+
+env:
+  ASSET_BASE: https://github.com/complexus-lab/rouvre/releases/download/bundles
+  PUBLISHED_INDEX: https://complexuslab.fr/rouvre/bundles/index.plist
+
+jobs:
+  # Pull requests only measure the upstream index: they cannot read the
+  # signing key and must not publish anything.
+  measure:
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && !inputs.publish)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v4
+    - name: Measure the upstream index
+      run: bin/mirror_bundles measure
+
+  publish:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.publish)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: release
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Mirror
+      env:
+        SIGNING_KEY: ${{ secrets.ROUVRE_SIGNING_KEY }}
+      run: |
+        set -euo pipefail
+        test -n "$SIGNING_KEY" || { echo "::error::The release environment has no ROUVRE_SIGNING_KEY secret"; exit 1; }
+        key="$RUNNER_TEMP/signing.pem"
+        umask 077
+        printf '%s\n' "$SIGNING_KEY" > "$key"
+        # The key must match the public key the application embeds.
+        openssl pkey -in "$key" -pubout | cmp - keys/release-signing.pub.pem
+        bin/mirror_bundles mirror --out mirror --asset-base "$ASSET_BASE" --previous "$PUBLISHED_INDEX" --key "$key"
+        rm -f "$key"
+        openssl pkeyutl -verify -pubin -inkey keys/release-signing.pub.pem -rawin -in mirror/index.plist -sigfile mirror/index.plist.sig
+
+    - name: Upload archives
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        gh release view bundles > /dev/null 2>&1 || gh release create bundles --title "Bundle mirror" --latest=false --prerelease \
+          --notes "Archives of the bundle mirror. They are listed, with their SHA-256 digests, in the signed index at https://complexuslab.fr/rouvre/bundles/index.plist. Each bundle keeps the license of its authors."
+        shopt -s nullglob
+        files=(mirror/archives/*.tbz)
+        echo "${#files[@]} new archives"
+        # Archive names change with each bundle update, so existing assets are never replaced.
+        for f in "${files[@]}"; do gh release upload bundles "$f"; done
+
+    - name: Check the published URLs
+      run: |
+        set -euo pipefail
+        python3 - <<'EOF'
+        import plistlib, urllib.request
+        index = plistlib.load(open("mirror/index.plist", "rb"))
+        missing = []
+        for b in index["bundles"]:
+            url = b["versions"][0]["url"]
+            req = urllib.request.Request(url, method="HEAD")
+            try:
+                urllib.request.urlopen(req, timeout=60)
+            except Exception as e:
+                missing.append(f"{b['name']}: {url} ({e})")
+        if missing:
+            raise SystemExit("Archives not reachable:\n" + "\n".join(missing))
+        print(f"{len(index['bundles'])} archives reachable")
+        EOF
+
+    - name: Check the site credentials
+      env:
+        HAS_KEY: ${{ secrets.SITE_DEPLOY_KEY != '' }}
+        HAS_TOKEN: ${{ secrets.SITE_TOKEN != '' }}
+      run: |
+        if [ "$HAS_KEY" != true ] && [ "$HAS_TOKEN" != true ]; then
+          echo "::error::The release environment needs SITE_DEPLOY_KEY or SITE_TOKEN to publish to the site repository"
+          exit 1
+        fi
+
+    - name: Check out the site
+      uses: actions/checkout@v4
+      # Write access to the site repository comes from either an SSH deploy
+      # key (SITE_DEPLOY_KEY) or a fine-grained token limited to that
+      # repository (SITE_TOKEN), whichever the release environment holds.
+      with:
+        repository: complexus-lab/complexus-lab-site
+        ssh-key: ${{ secrets.SITE_DEPLOY_KEY }}
+        token: ${{ secrets.SITE_TOKEN || github.token }}
+        path: site
+
+    - name: Publish the index
+      run: |
+        set -euo pipefail
+        mkdir -p site/rouvre/bundles
+        cp mirror/index.plist mirror/index.plist.sig site/rouvre/bundles/
+        cd site
+        git add rouvre/bundles
+        if git diff --cached --quiet; then
+          echo "Index unchanged"
+          exit 0
+        fi
+        git -c user.name="Rouvre bundle mirror" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+          commit -m "Update the Rouvre bundle index" -m "Generated by ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        git push origin HEAD:main
