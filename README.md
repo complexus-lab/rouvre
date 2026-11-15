@@ -97,6 +97,7 @@ Every pull request and every push to `main` is built on a GitHub-hosted `macos-1
 
  * [INTERNALS.md](INTERNALS.md) describes the core data structures and the layering of the code.
  * [CONTRIBUTING.md](CONTRIBUTING.md) describes how to submit changes.
+ * [docs/INDEPENDENCE.md](docs/INDEPENDENCE.md) records the plan to separate from upstream infrastructure and host Rouvre's own services.
  * The user manual shipped with the application is in `Applications/TextMate/resources/TextMate Help`.
 
 ## Legal
