@@ -2,11 +2,11 @@
 
 Rouvre is a [Complexus Lab](https://complexuslab.fr) project: an independent fork of the TextMate 2 source code, a text editor for macOS. Upstream development stopped in October 2021. This fork exists to make the code build and run again on current macOS releases and on Apple Silicon.
 
-Rouvre is maintained at <https://github.com/thierrysays/rouvre>. It has no affiliation with the original publisher or author, who neither endorse nor support it. Questions about this fork belong in this repository.
+Rouvre is maintained at <https://github.com/complexus-lab/rouvre>. It has no affiliation with the original publisher or author, who neither endorse nor support it. Questions about this fork belong in this repository.
 
 ## Status
 
-This is work in progress. There are no binary releases.
+This is work in progress. There are no binary releases. Rouvre requires macOS 15 or later.
 
 | Area | State |
 |---|---|
@@ -18,7 +18,7 @@ This is work in progress. There are no binary releases.
 
 ## Feedback
 
-Use the [issue tracker](https://github.com/thierrysays/rouvre/issues) for bug reports and questions.
+Use the [issue tracker](https://github.com/complexus-lab/rouvre/issues) for bug reports and questions.
 
 ## Building
 
@@ -48,7 +48,7 @@ sudo port install boost capnproto libiconv multimarkdown ninja ragel sparsehash
 Clone with submodules, then run `./configure` followed by `ninja`:
 
 ```sh
-git clone --recursive https://github.com/thierrysays/rouvre.git
+git clone --recursive https://github.com/complexus-lab/rouvre.git
 cd rouvre
 ./configure && ninja Rouvre/run
 ```

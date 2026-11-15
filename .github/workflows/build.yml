@@ -55,6 +55,11 @@ jobs:
         test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$app/Contents/Info.plist")" = Rouvre
         /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist"
         otool -l "$app/Contents/MacOS/Rouvre" | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX' | grep -E 'minos|version|sdk'
+        # The binary and the Info.plist must declare the same minimum system.
+        minos="$(otool -l "$app/Contents/MacOS/Rouvre" | awk '/LC_BUILD_VERSION/ { f = 1 } f && /minos/ { print $2; exit }')"
+        declared="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$app/Contents/Info.plist")"
+        echo "minos=$minos LSMinimumSystemVersion=$declared"
+        test "$minos" = "$declared"
 
     # The application must run on a machine without Homebrew: every Mach-O
     # file in the bundle may only load system libraries or bundled ones.

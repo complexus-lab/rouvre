@@ -19,7 +19,7 @@ TM_OBJCXX_FLAGS      = '$TM_OBJCXX_FLAGS -I"$CWD/Shared/include" ${TM_FRAMEWORK_
 TM_NINJA_FILE        = '${CWD}/build.ninja'
 TM_NINJA_TARGET      = 'Rouvre/run'
 
-TM_ISSUE_URL         = 'https://github.com/thierrysays/rouvre/issues/%s'
+TM_ISSUE_URL         = 'https://github.com/complexus-lab/rouvre/issues/%s'
 
 [ 'source.c++, source.objc++' ]
 tabSize          = 3

@@ -22,7 +22,7 @@ Developing patches should follow this workflow:
 1.	Fork on GitHub (click Fork button)
 2.	Clone to computer: `git clone --recursive git@github.com:«github account»/rouvre.git`
 3.	cd into your repo: `cd rouvre`
-4.	Set up remote upstream: `git remote add -f upstream https://github.com/thierrysays/rouvre.git`
+4.	Set up remote upstream: `git remote add -f upstream https://github.com/complexus-lab/rouvre.git`
 
 ### Adding a Feature
 
@@ -70,4 +70,4 @@ After this, re-apply your change and commit. If the change is non-trivial it is 
 	property of File’s Owner.
 
 [GPL 3]:  https://www.gnu.org/licenses/gpl-3.0.html
-[issues]: https://github.com/thierrysays/rouvre/issues
+[issues]: https://github.com/complexus-lab/rouvre/issues
