@@ -13,7 +13,7 @@ This is work in progress. There are no binary releases.
 | Source | Upstream commit `346b52b` (12 October 2021) plus the changes in this repository |
 | Build | Compiles, links and signs on macOS 15 with Apple Silicon (arm64 only); the resulting application has not yet been launched or tested |
 | Tests | Not runnable: the build generator does not yet emit rules for the `tests` directives |
-| Naming | The application is `Rouvre.app` with the identifier `io.github.complexus-lab.Rouvre`. Names that bundles and scripts depend on are kept: the `mate` command, the `TM_*` variables, the `TextMate` JavaScript object and the `com.macromates.textmate.*` file types. Settings, bundles and session data live in `~/Library/Application Support/Rouvre`, separate from a TextMate installation |
+| Naming | The application is `Rouvre.app` with the identifier `fr.complexuslab.Rouvre`. Names that bundles and scripts depend on are kept: the `mate` command, the `TM_*` variables, the `TextMate` JavaScript object and the `com.macromates.textmate.*` file types. Settings, bundles and session data live in `~/Library/Application Support/Rouvre`, separate from a TextMate installation |
 | Online services | Software update and crash reporting are switched off. The bundle index is still fetched from the upstream server, which this fork does not operate |
 
 ## Feedback

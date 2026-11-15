@@ -9,7 +9,7 @@
 	<key>CFBundleVersion</key>
 	<string>9800</string>
 	<key>CFBundleIdentifier</key>
-	<string>io.github.complexus-lab.${TARGET_NAME}</string>
+	<string>fr.complexuslab.${TARGET_NAME}</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
@@ -19,7 +19,7 @@
 	<key>CFBundleHelpBookName</key>
 	<string>TextMate 2 Help</string>
 	<key>CFBundleIconFile</key>
-	<string>TextMate</string>
+	<string>Rouvre</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>

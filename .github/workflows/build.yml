@@ -47,6 +47,9 @@ jobs:
         app="$HOME/build/rouvre/release/Applications/TextMate/Rouvre.app"
         codesign --verify --deep --strict "$app"
         lipo -archs "$app/Contents/MacOS/Rouvre"
+        test -f "$app/Contents/Resources/Rouvre.icns"
+        test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$app/Contents/Info.plist")" = Rouvre
+        /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist"
         otool -l "$app/Contents/MacOS/Rouvre" | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX' | grep -E 'minos|version|sdk'
 
     # The application must run on a machine without Homebrew: every Mach-O

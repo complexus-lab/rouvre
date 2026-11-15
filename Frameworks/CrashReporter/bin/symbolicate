@@ -5,7 +5,7 @@ require "fileutils"
 require "shellwords"
 
 DSYM_ARCHIVE_DIR = "#{ENV['HOME']}/build/TextMate/archive/dsym"
-DSYM_CACHE_DIR   = "#{ENV['HOME']}/Library/Caches/io.github.complexus-lab.Rouvre/dsym"
+DSYM_CACHE_DIR   = "#{ENV['HOME']}/Library/Caches/fr.complexuslab.Rouvre/dsym"
 
 BinaryImage = Struct.new(:first, :last, :name, :file)
 

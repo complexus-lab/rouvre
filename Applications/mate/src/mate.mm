@@ -56,7 +56,7 @@ static NSURL* find_app ()
 {
 	disable_sudo_helper_t helper;
 
-	if(NSURL* url = [NSWorkspace.sharedWorkspace URLForApplicationWithBundleIdentifier:@"io.github.complexus-lab.Rouvre"])
+	if(NSURL* url = [NSWorkspace.sharedWorkspace URLForApplicationWithBundleIdentifier:@"fr.complexuslab.Rouvre"])
 		return url;
 
 	fprintf(stderr, "Can’t find Rouvre.app\n");

@@ -517,11 +517,11 @@ namespace
 
 	for(auto path : bundles::locations())
 		bundlesPaths.push_back(path::join(path, "Bundles"));
-	bundlesIndexPath = path::join(path::home(), "Library/Caches/io.github.complexus-lab.Rouvre/BundlesIndex.binary");
+	bundlesIndexPath = path::join(path::home(), "Library/Caches/fr.complexuslab.Rouvre/BundlesIndex.binary");
 	cache.set_content_filter(&prune_dictionary);
 
 	// LEGACY bundle index used prior to 2.0-alpha.9467
-	std::string const oldPath = path::join(path::home(), "Library/Caches/io.github.complexus-lab.Rouvre/BundlesIndex.plist");
+	std::string const oldPath = path::join(path::home(), "Library/Caches/fr.complexuslab.Rouvre/BundlesIndex.plist");
 	if(access(oldPath.c_str(), R_OK) == 0)
 	{
 		cache.load(oldPath);

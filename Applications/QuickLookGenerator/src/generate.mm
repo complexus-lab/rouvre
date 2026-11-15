@@ -35,7 +35,7 @@ static void initialize (CFBundleRef generatorBundle)
 			paths.push_back(path::join(path, "Bundles"));
 
 		plist::cache_t cache;
-		cache.load_capnp(path::join(path::home(), "Library/Caches/io.github.complexus-lab.Rouvre/BundlesIndex.binary"));
+		cache.load_capnp(path::join(path::home(), "Library/Caches/fr.complexuslab.Rouvre/BundlesIndex.binary"));
 
 		auto index = create_bundle_index(paths, cache);
 		bundles::set_index(index.first, index.second);
@@ -206,7 +206,7 @@ OSStatus TextMateQuickLookPlugIn_GeneratePreviewForURL (void* instance, QLPrevie
 	if(QLPreviewRequestIsCancelled(request))
 		return noErr;
 
-	NSUserDefaults* userDefaults = [[NSUserDefaults alloc] initWithSuiteName:@"io.github.complexus-lab.Rouvre"];
+	NSUserDefaults* userDefaults = [[NSUserDefaults alloc] initWithSuiteName:@"fr.complexuslab.Rouvre"];
 	NSString* appearance = [userDefaults stringForKey:@"themeAppearance"];
 	BOOL darkMode = [appearance isEqualToString:@"dark"];
 	if(@available(macos 10.14, *))
