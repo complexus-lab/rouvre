@@ -27,7 +27,7 @@ static void initialize (CFBundleRef generatorBundle)
 		NSBundle* parentBundle = [NSBundle bundleWithPath:parentBundlePath];
 
 		settings_t::set_default_settings_path([[parentBundle pathForResource:@"Default" ofType:@"tmProperties"] fileSystemRepresentation]);
-		settings_t::set_global_settings_path(path::join(path::home(), "Library/Application Support/TextMate/Global.tmProperties"));
+		settings_t::set_global_settings_path(path::join(path::home(), "Library/Application Support/Rouvre/Global.tmProperties"));
 
 		// Load bundle index
 		std::vector<std::string> paths;

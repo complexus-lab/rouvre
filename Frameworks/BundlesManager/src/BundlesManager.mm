@@ -62,7 +62,7 @@ static NSString* SafeBasename (NSString* name)
 {
 	if(self = [super init])
 	{
-		_installDirectory = [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"TextMate/Managed"];
+		_installDirectory = [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"Rouvre/Managed"];
 		_localIndexPath   = [_installDirectory stringByAppendingPathComponent:@"LocalIndex.plist"];
 		_remoteIndexPath  = [_installDirectory stringByAppendingPathComponent:@"Cache/org.textmate.updates.default"];
 		_remoteIndexURL   = [NSURL URLWithString:@REST_API "/bundles"];
@@ -463,7 +463,7 @@ namespace
 	{
 		for(NSString* dir in @[ @"", @"Pristine Copy" ])
 		{
-			NSString* textMateFolder = [NSString pathWithComponents:@[ path, @"TextMate", dir ]];
+			NSString* textMateFolder = [NSString pathWithComponents:@[ path, @"Rouvre", dir ]];
 			NSString* avianFolder    = [NSString pathWithComponents:@[ path, @"Avian", dir ]];
 			NSString* src = [avianFolder stringByAppendingPathComponent:@"Bundles"];
 			NSString* dst = [textMateFolder stringByAppendingPathComponent:@"Bundles"];

@@ -30,10 +30,10 @@ namespace bundles_db
 	// = Sources =
 	// ===========
 
-	static std::string sources_base_path (std::string const& installDir)            { return installDir == NULL_STR ? path::join(path::home(), "Library/Application Support/TextMate/Managed") : installDir; }
+	static std::string sources_base_path (std::string const& installDir)            { return installDir == NULL_STR ? path::join(path::home(), "Library/Application Support/Rouvre/Managed") : installDir; }
 	static std::string sources_path (std::string const& installDir)                 { return path::join(sources_base_path(installDir), "Cache"); }
 
-	static std::string local_bundle_path (std::string const& installDir = NULL_STR) { return installDir == NULL_STR ? path::join(path::home(), "Library/Application Support/TextMate/Managed") : installDir; }
+	static std::string local_bundle_path (std::string const& installDir = NULL_STR) { return installDir == NULL_STR ? path::join(path::home(), "Library/Application Support/Rouvre/Managed") : installDir; }
 	static std::string local_index_path (std::string const& installDir = NULL_STR)  { return path::join(local_bundle_path(installDir), "LocalIndex.plist"); }
 
 	std::string source_t::path () const                                             { return _path; }
@@ -66,7 +66,7 @@ namespace bundles_db
 	std::vector<source_ptr> sources (std::string const& installDir)
 	{
 		// LEGACY files used prior to 2.0-alpha.9555
-		unlink(path::join(path::home(), "Library/Application Support/TextMate/Managed/KeyChain.plist").c_str());
+		unlink(path::join(path::home(), "Library/Application Support/Rouvre/Managed/KeyChain.plist").c_str());
 		unlink(path::join(sources_base_path(installDir), "Sources.plist").c_str());
 
 		return { std::make_shared<source_t>("TextMate Bundles", "org.textmate.updates.default", REST_API "/bundles", path::join(sources_path(installDir), "org.textmate.updates.default")) };

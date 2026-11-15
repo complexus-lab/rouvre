@@ -117,7 +117,7 @@ void InstallBundleItems (NSArray* itemPaths)
 			[alert addButtons:@"Install", @"Cancel", nil];
 			if([alert runModal] == NSAlertFirstButtonReturn) // "Install"
 			{
-				std::string const installDir = path::join(path::home(), "Library/Application Support/TextMate/Pristine Copy/Bundles");
+				std::string const installDir = path::join(path::home(), "Library/Application Support/Rouvre/Pristine Copy/Bundles");
 				if(path::make_dir(installDir))
 				{
 					std::string const installPath = path::unique(path::join(installDir, path::name(info.path)));
