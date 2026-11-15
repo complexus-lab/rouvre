@@ -31,7 +31,11 @@ jobs:
         uname -m
 
     - name: Dependencies
-      run: brew install boost capnp google-sparsehash multimarkdown ninja ragel
+      run: brew install boost capnp google-sparsehash libiconv multimarkdown ninja ragel
+
+    # The scm tests exercise the Mercurial and Subversion drivers.
+    - name: Test dependencies
+      run: brew install mercurial subversion
 
     - name: Configure
       run: ./configure && cat local.rave
@@ -73,6 +77,13 @@ jobs:
           fi
         done < <(find "$app" -type f -print0)
         otool -L "$app/Contents/MacOS/Rouvre"
+        # Text conversion must come from the bundled GNU libiconv, not from
+        # the iconv of the system.
+        if nm -u "$app/Contents/MacOS/Rouvre" | grep -E '_(lib)?iconv'; then
+          echo "::error::Rouvre still imports iconv symbols from a shared library"
+          bad=1
+        fi
+        nm "$app/Contents/MacOS/Rouvre" | grep -q ' [Tt] _libiconv_open$' || { echo "::error::GNU libiconv is not linked into Rouvre"; bad=1; }
         exit $bad
 
     # ditto keeps symlinks, permissions and the code signature intact.
@@ -86,6 +97,35 @@ jobs:
         path: ${{ runner.temp }}/Rouvre-arm64.zip
         retention-days: 14
         compression-level: 0
+
+    # Unit tests of every target that declares a ‘tests’ directive. -k 0 runs
+    # them all so one run reports every failing target.
+    - name: Test
+      run: |
+        set -o pipefail
+        ninja -k 0 tests 2>&1 | tee test.log
+
+    - name: Test summary
+      if: always()
+      run: |
+        test -f test.log || exit 0
+        {
+          echo '### Unit tests'
+          echo
+          echo "Failed edges: $(grep -c '^FAILED:' test.log || true)"
+          echo
+          echo '```'
+          grep -A12 -E '^FAILED:|: (fatal )?error: |^Undefined symbols' test.log | grep -v '^ld: warning' | sed -E 's#/Users/runner/(work/rouvre/rouvre|build/rouvre)/##g' | cut -c1-300 | head -150
+          echo '```'
+        } | tee -a "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload test log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-log
+        path: test.log
+        if-no-files-found: ignore
 
     - name: Diagnostics summary
       if: always()

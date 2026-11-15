@@ -1,6 +1,9 @@
-#!/System/Library/Frameworks/Ruby.framework/Versions/Current/usr/bin/ruby -w
+#!/usr/bin/env ruby
 require 'pathname'
 require 'erb'
+
+# Test files contain UTF-8; do not depend on the locale ninja was started with.
+Encoding.default_external = Encoding::UTF_8
 
 user_code = ""
 setup, tests, benchmarks = [ ], [ ], [ ]
@@ -30,7 +33,7 @@ ARGV.each do |file|
   end
 end
 
-STDOUT << ERB.new(DATA.read, 0, '-<>').result(binding)
+STDOUT << ERB.new(DATA.read, trim_mode: '-<>').result(binding)
 
 __END__
 #line 37 "<%= $PROGRAM_NAME %>"

@@ -104,8 +104,23 @@ void test_xml_markup ()
 	OAK_ASSERT_EQ(buf.xml_substr(6, 13), "<text>&lt;World></text>");
 }
 
+// The system spell checker flags nothing on hosts without a spell service
+// (for example a CI machine with no GUI session). Probe it with a word no
+// dictionary holds so the spelling tests only run where it answers.
+static bool spell_checker_available ()
+{
+	static bool const available = ns::is_misspelled(std::string("qzxvkjw"), "en");
+	static std::once_flag flag;
+	if(!available)
+		std::call_once(flag, []{ OAK_WARN("Skipping spelling tests (system spell checker reports no misspellings)"); });
+	return available;
+}
+
 void test_spelling ()
 {
+	if(!spell_checker_available())
+		return;
+
 	ng::buffer_t buf;
 	buf.set_grammar(TestGrammarItem);
 	buf.set_spelling_language("en");
@@ -113,6 +128,7 @@ void test_spelling ()
 	buf.insert(0, "myfo god\nthat ibs nice\nlamere check\n");
 	buf.bump_revision();
 	buf.wait_for_repair();
+	buf.recheck_spelling(0, buf.size()); // wait_for_repair() suspends spell checking
 
 	OAK_ASSERT_EQ(buf.misspellings(0, buf.size()).size(), 6);
 
@@ -124,6 +140,9 @@ void test_spelling ()
 
 void test_spelling_2 ()
 {
+	if(!spell_checker_available())
+		return;
+
 	ng::buffer_t buf;
 	buf.set_grammar(TestGrammarItem);
 	buf.set_spelling_language("en");
@@ -131,6 +150,7 @@ void test_spelling_2 ()
 	buf.insert(0, "it mq xy");
 	buf.bump_revision();
 	buf.wait_for_repair();
+	buf.recheck_spelling(0, buf.size()); // wait_for_repair() suspends spell checking
 
 	std::map<size_t, bool> bad = buf.misspellings(0, buf.size());
 	OAK_ASSERT_EQ(bad.size(), 3);
@@ -140,12 +160,16 @@ void test_spelling_2 ()
 
 void test_spelling_3 ()
 {
+	if(!spell_checker_available())
+		return;
+
 	ng::buffer_t buf;
 	buf.set_grammar(TestGrammarItem);
 	buf.set_live_spelling(true);
 	buf.insert(0, "it mq xy");
 	buf.bump_revision();
 	buf.wait_for_repair();
+	buf.recheck_spelling(0, buf.size()); // wait_for_repair() suspends spell checking
 
 	std::map<size_t, bool> bad = buf.misspellings(4, 7);
 	OAK_ASSERT_EQ(bad.size(), 3);

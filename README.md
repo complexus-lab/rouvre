@@ -30,16 +30,17 @@ Use the [issue tracker](https://github.com/complexus-lab/rouvre/issues) for bug 
  * [multimarkdown][]    — marked-up plain text compiler
  * [ninja][]            — build system similar to `make`
  * [ragel][]            — state machine compiler
+ * [GNU libiconv][libiconv] — character set conversion, linked statically
  * [sparsehash][]       — a cache friendly `hash_map`
 
 All of these can be installed with either [Homebrew][] or [MacPorts][]:
 
 ```sh
 # Homebrew
-brew install boost capnp google-sparsehash multimarkdown ninja ragel
+brew install boost capnp google-sparsehash libiconv multimarkdown ninja ragel
 
 # MacPorts
-sudo port install boost capnproto multimarkdown ninja ragel sparsehash
+sudo port install boost capnproto libiconv multimarkdown ninja ragel sparsehash
 ```
 
 ### Build
@@ -62,6 +63,8 @@ PREFIX=/some/prefix ./configure
 
 Cap’n Proto is linked statically when its archives (`libcapnp.a`, `libkj.a`) are present, through a `.static-libs` directory created by `./configure`, so that the application runs on machines where the library is not installed.
 
+GNU libiconv is required and always linked statically, in place of the conversion library of the system: the one shipped with current macOS transliterates differently, which would make saved files depend on the OS version. It is looked up in `ICONV_PREFIX`, then in Homebrew’s `opt/libiconv`, then in the dependency prefix.
+
 The detected paths are written to `local.rave`. Delete that file to run the detection again; if it exists, `./configure` leaves it untouched.
 
 Build output goes to `~/build/rouvre` unless the `builddir` environment variable names an existing directory.
@@ -74,6 +77,17 @@ ninja Rouvre/run  # Build, sign, and (re)launch the application
 ```
 
 The application is signed ad hoc (`CS_IDENTITY` is `-` in `default.rave`). Set `CS_IDENTITY` in `local.rave` to sign with your own Developer ID.
+
+### Tests
+
+Targets list their unit tests with a `tests` directive in their `default.rave`. The test files of a target are merged by `bin/gen_test` into one executable, which is linked with the target and run from the source root.
+
+```sh
+ninja tests        # Build and run the tests of every target
+ninja buffer/test  # Build and run the tests of one target
+```
+
+The `cxx_tests` directives (interactive GUI tests based on CxxTest) are not wired into the build.
 
 To clean everything run:
 
@@ -114,6 +128,7 @@ The code inherited from upstream is copyright MacroMates Ltd. and the upstream c
 [ragel]:         https://www.colm.net/open-source/ragel/
 [capnp]:         https://capnproto.org/
 [sparsehash]:    https://github.com/sparsehash/sparsehash
+[libiconv]:      https://www.gnu.org/software/libiconv/
 [Homebrew]:      https://brew.sh/
 [MacPorts]:      https://www.macports.org/
 [NinjaBundle]:   https://github.com/textmate/ninja.tmbundle
