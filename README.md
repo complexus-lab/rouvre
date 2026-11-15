@@ -103,7 +103,7 @@ Every pull request and every push to `main` is built on a GitHub-hosted `macos-1
 
 The source is released under the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See [COPYING](COPYING) and [LICENSE](LICENSE).
 
-The code inherited from upstream is copyright MacroMates Ltd. and the upstream contributors; the complete authorship is preserved in the git history. Changes made in this repository are copyright Complexus Lab and their respective authors, and are released under the same license. The license requires the inherited copyright notices to stay in place.
+The code inherited from upstream is copyright MacroMates Ltd. and the upstream contributors; the complete authorship is preserved in the git history. Changes made in this repository are copyright Thierry Sayegh-Sauvage (Complexus Lab) and their respective authors, and are released under the same license. The license requires the inherited copyright notices to stay in place.
 
 “TextMate” is a trademark of its owner, who has no connection with this fork. The name appears here only to state where the code comes from.
 
