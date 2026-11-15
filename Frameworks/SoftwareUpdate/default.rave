@@ -1,5 +1,5 @@
 target "${dirname}" {
-	require OakAppKit
+	require OakAppKit signing
 	headers src/*.h
 
 	files resources/* "Resources"

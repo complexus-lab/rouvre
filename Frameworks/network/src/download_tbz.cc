@@ -1,5 +1,5 @@
 #include "download_tbz.h"
-#include "filter_check_signature.h"
+#include <signing/signing.h>
 #include "constants.h"
 #include "user_agent.h"
 #include "proxy.h"
@@ -18,9 +18,8 @@ namespace network
 	{
 		struct user_data_t
 		{
-			user_data_t (key_chain_t const& keychain, double* progress, double start_progress, double stop_progress, bool const* stop_flag, int tbz_fd, int tmp_fd) : progress(progress), start_progress(start_progress), stop_progress(stop_progress), stop_flag(stop_flag), tbz_fd(tbz_fd), tmp_fd(tmp_fd), verify_signature(keychain, kHTTPSigneeHeader, kHTTPSignatureHeader)
+			user_data_t (double* progress, double start_progress, double stop_progress, bool const* stop_flag, int tbz_fd, int tmp_fd) : progress(progress), start_progress(start_progress), stop_progress(stop_progress), stop_flag(stop_flag), tbz_fd(tbz_fd), tmp_fd(tmp_fd)
 			{
-				verify_signature.setup();
 			}
 
 			void receive (size_t len)
@@ -48,7 +47,7 @@ namespace network
 			int tbz_fd;
 			int tmp_fd;
 
-			network::check_signature_t verify_signature;
+			signing::sha256_t digest;
 
 			size_t received = 0;
 			size_t total = 0;
@@ -87,8 +86,6 @@ namespace network
 						data.etag = value;
 					else if(header == "content-length")
 						data.total = strtol(value.c_str(), nullptr, 10);
-					else if(header == kHTTPSigneeHeader || header == kHTTPSignatureHeader)
-						data.verify_signature.receive_header(header, value);
 				}
 			}
 			return data.should_stop() ? 0 : size * nmemb;
@@ -100,13 +97,13 @@ namespace network
 
 			write(data.tbz_fd, ptr, size * nmemb);
 			write(data.tmp_fd, ptr, size * nmemb);
-			data.verify_signature.receive_data((char const*)ptr, size * nmemb);
+			data.digest.update(ptr, size * nmemb);
 			data.receive(size * nmemb);
 			return data.should_stop() ? 0 : size * nmemb;
 		}
 	}
 
-	std::string download_tbz (std::string const& url, key_chain_t const& keyChain, std::string const& destination, std::string& error, double* progress, double progressStart, double progressStop, bool const* stopFlag)
+	std::string download_tbz (std::string const& url, std::string const& expectedSHA256, std::string const& destination, std::string& error, double* progress, double progressStart, double progressStop, bool const* stopFlag)
 	{
 		std::string res = NULL_STR;
 		if(CURL* handle = curl_easy_init())
@@ -122,7 +119,7 @@ namespace network
 			// = Curl =
 			// ========
 
-			user_data_t data(keyChain, progress, progressStart, progressStop, stopFlag, tbz.input_fd(), tmpInput);
+			user_data_t data(progress, progressStart, progressStop, stopFlag, tbz.input_fd(), tmpInput);
 
 			curl_easy_setopt(handle, CURLOPT_URL,              url.c_str());
 			curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION,   true);
@@ -176,11 +173,19 @@ namespace network
 			bool goodSignature = false;
 			if(serverReply == 200)
 			{
-				if(goodSignature = data.verify_signature.receive_end(error))
+				std::string const digest = data.digest.hex_digest();
+				if(expectedSHA256.empty() || expectedSHA256 == NULL_STR)
 				{
+					error = "The bundle index lists no checksum for this archive.";
+				}
+				else if(digest != expectedSHA256)
+				{
+					error = text::format("Checksum mismatch: expected %s, got %s.", expectedSHA256.c_str(), digest.c_str());
+				}
+				else
+				{
+					goodSignature = true;
 					path::set_attr(tmpPath, kHTTPEntityTagAttribute, data.etag);
-					path::set_attr(tmpPath, kHTTPSigneeHeader,       data.verify_signature.signee());
-					path::set_attr(tmpPath, kHTTPSignatureHeader,    data.verify_signature.signature());
 					path::rename_or_copy(tmpPath, destination);
 				}
 			}

@@ -1,5 +1,6 @@
 #import "OakDownloadManager.h"
 #import <oak/misc.h>
+#import <signing/signing.h>
 
 static NSString* const OakHTTPHeaderSignee    = @"x-amz-meta-x-signee";
 static NSString* const OakHTTPHeaderSignature = @"x-amz-meta-x-signature";
@@ -31,6 +32,7 @@ static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 @interface OakDownloadArchiveTask : NSObject <NSProgressReporting, NSURLSessionDataDelegate>
 {
 	NSDictionary<NSString*, NSString*>* _publicKeys;
+	NSString*                           _expectedSHA256; // when set, checked instead of _publicKeys
 	NSString*                           _signee;
 	NSString*                           _signature;
 
@@ -55,12 +57,13 @@ static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 @end
 
 @implementation OakDownloadArchiveTask
-- (instancetype)initWithURL:(NSURL*)url forReplacingURL:(NSURL*)localURL publicKeys:(NSDictionary<NSString*, NSString*>*)publicKeys completionHandler:(void(^)(NSURL* extractedArchiveURL, NSError* error))completionHandler
+- (instancetype)initWithURL:(NSURL*)url forReplacingURL:(NSURL*)localURL publicKeys:(NSDictionary<NSString*, NSString*>*)publicKeys sha256:(NSString*)sha256 completionHandler:(void(^)(NSURL* extractedArchiveURL, NSError* error))completionHandler
 {
 	if(self = [super init])
 	{
 		_fileURLToReplace       = localURL;
 		_publicKeys             = publicKeys;
+		_expectedSHA256         = sha256.lowercaseString;
 		_completionHandler      = completionHandler;
 		_progress               = [NSProgress discreteProgressWithTotalUnitCount:-1];
 		_data                   = [NSMutableData data];
@@ -236,7 +239,12 @@ static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 		os_log_error(OS_LOG_DEFAULT, "Failed to download %{public}@: %{public}@", dataTask.originalRequest.URL, error.localizedDescription);
 		_completionHandler(nil, error);
 	}
-	else if(![OakDownloadManager.sharedInstance data:_data hasValidBase64EncodedSignature:_signature usingPublicKeyString:_publicKeys[_signee]])
+	else if(_expectedSHA256 && ![_expectedSHA256 isEqualToString:@(signing::sha256(_data.bytes, _data.length).c_str())])
+	{
+		os_log_error(OS_LOG_DEFAULT, "Checksum mismatch for %{public}@", dataTask.originalRequest.URL);
+		_completionHandler(nil, [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"The downloaded archive does not match the checksum in the bundle index." }]);
+	}
+	else if(!_expectedSHA256 && ![OakDownloadManager.sharedInstance data:_data hasValidBase64EncodedSignature:_signature usingPublicKeyString:_publicKeys[_signee]])
 	{
 		os_log_error(OS_LOG_DEFAULT, "Unable to verify signature");
 		_completionHandler(nil, [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"Unable to verify signature." }]);
@@ -389,9 +397,81 @@ static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 	[dataTask resume];
 }
 
+- (id <NSProgressReporting>)downloadArchiveAtURL:(NSURL*)serverURL forReplacingURL:(nullable NSURL*)localURL sha256:(NSString*)sha256 completionHandler:(void(^)(NSURL* extractedArchiveURL, NSError* error))completionHandler
+{
+	if(!sha256.length)
+	{
+		NSError* error = [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"The bundle index lists no checksum for this archive." }];
+		dispatch_async(dispatch_get_main_queue(), ^{ completionHandler(nil, error); });
+		return [NSProgress discreteProgressWithTotalUnitCount:0];
+	}
+
+	return [[OakDownloadArchiveTask alloc] initWithURL:serverURL forReplacingURL:localURL publicKeys:@{ } sha256:sha256 completionHandler:completionHandler];
+}
+
+- (void)downloadSignedFileAtURL:(NSURL*)serverURL replacingFileAtURL:(NSURL*)localFileURL completionHandler:(void(^)(BOOL wasUpdated, NSError* error))completionHandler
+{
+	NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:serverURL cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:60];
+	[request setValue:self.userAgentString forHTTPHeaderField:@"User-Agent"];
+
+	ssize_t size = getxattr(localFileURL.fileSystemRepresentation, "org.w3.http.etag", nullptr, 0, 0, 0);
+	if(size != -1)
+	{
+		if(NSMutableData* tempData = [NSMutableData dataWithLength:size])
+		{
+			getxattr(localFileURL.fileSystemRepresentation, "org.w3.http.etag", tempData.mutableBytes, tempData.length, 0, 0);
+			if(NSString* entityTag = [[NSString alloc] initWithData:tempData encoding:NSUTF8StringEncoding])
+				[request setValue:entityTag forHTTPHeaderField:@"If-None-Match"];
+		}
+	}
+
+	NSURLSessionDataTask* dataTask = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error){
+		NSInteger statusCode = ((NSHTTPURLResponse*)response).statusCode;
+		if(error || statusCode != 200)
+		{
+			if(!error && statusCode != 304)
+				error = [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Server returned %ld for %@", statusCode, serverURL.absoluteString] }];
+			completionHandler(NO, error);
+			return;
+		}
+
+		NSURL* signatureURL = [NSURL URLWithString:[serverURL.absoluteString stringByAppendingString:@".sig"]];
+		NSMutableURLRequest* signatureRequest = [NSMutableURLRequest requestWithURL:signatureURL cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:60];
+		[signatureRequest setValue:self.userAgentString forHTTPHeaderField:@"User-Agent"];
+
+		NSString* entityTag = ((NSHTTPURLResponse*)response).allHeaderFields[@"ETag"];
+		NSURLSessionDataTask* signatureTask = [NSURLSession.sharedSession dataTaskWithRequest:signatureRequest completionHandler:^(NSData* signature, NSURLResponse* signatureResponse, NSError* error){
+			BOOL wasUpdated = NO;
+			NSInteger signatureStatus = ((NSHTTPURLResponse*)signatureResponse).statusCode;
+			if(!error && signatureStatus != 200)
+				error = [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Server returned %ld for %@", signatureStatus, signatureURL.absoluteString] }];
+
+			if(!error)
+			{
+				if(!signing::verify(data.bytes, data.length, signature.bytes, signature.length))
+				{
+					error = [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"Unable to verify signature." }];
+				}
+				else if([data writeToURL:localFileURL options:NSDataWritingAtomic error:&error])
+				{
+					wasUpdated = YES;
+					if(char const* str = entityTag.UTF8String)
+					{
+						if(setxattr(localFileURL.fileSystemRepresentation, "org.w3.http.etag", str, strlen(str), 0, 0) == -1)
+							os_log_error(OS_LOG_DEFAULT, "setxattr(%{public}@): %{darwin.errno}d", localFileURL.path, errno);
+					}
+				}
+			}
+			completionHandler(wasUpdated, error);
+		}];
+		[signatureTask resume];
+	}];
+	[dataTask resume];
+}
+
 - (id <NSProgressReporting>)downloadArchiveAtURL:(NSURL*)serverURL forReplacingURL:(nullable NSURL*)localURL publicKeys:(NSDictionary<NSString*, NSString*>*)publicKeys completionHandler:(void(^)(NSURL* extractedArchiveURL, NSError* error))completionHandler
 {
-	return [[OakDownloadArchiveTask alloc] initWithURL:serverURL forReplacingURL:localURL publicKeys:publicKeys completionHandler:completionHandler];
+	return [[OakDownloadArchiveTask alloc] initWithURL:serverURL forReplacingURL:localURL publicKeys:publicKeys sha256:nil completionHandler:completionHandler];
 }
 
 // ==================

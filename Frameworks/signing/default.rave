@@ -1,0 +1,6 @@
+target "${dirname}" {
+	require Monocypher
+	headers src/signing.h
+	sources src/*.cc
+	tests tests/*.cc
+}

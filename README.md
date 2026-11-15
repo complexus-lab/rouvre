@@ -14,7 +14,7 @@ This is work in progress. There are no binary releases. Rouvre requires macOS 15
 | Build | Compiles, links and signs on macOS 15 with Apple Silicon (arm64 only). The application starts on macOS 27; it has not been tested beyond launch |
 | Tests | The unit tests of 24 targets build and pass on CI. The interactive GUI tests (`cxx_tests`) are not wired into the build |
 | Naming | The application is `Rouvre.app` with the identifier `fr.complexuslab.Rouvre`. Names that bundles and scripts depend on are kept: the `mate` command, the `TM_*` variables, the `TextMate` JavaScript object and the `com.macromates.textmate.*` file types. Settings, bundles and session data live in `~/Library/Application Support/Rouvre`, separate from a TextMate installation |
-| Online services | Software update and crash reporting are switched off and the license module is removed. The bundle index is the one thing still fetched from the upstream server, which this fork does not operate |
+| Online services | Software update and crash reporting are switched off and the license module is removed. Bundles come from the Rouvre mirror: the index at `https://complexuslab.fr/rouvre/bundles/index.plist` is checked against the release key, and each archive against the SHA-256 digest the index lists. No request goes to the upstream servers |
 
 ## Feedback
 

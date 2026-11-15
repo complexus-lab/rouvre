@@ -20,6 +20,16 @@ It is licensed under the [GNU Lesser General Public License][lgpl], version 2.1 
 
 [libiconv]: https://www.gnu.org/software/libiconv/
 [lgpl]: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+## Monocypher
+
+[Monocypher][] is copyright Loup Vaillant, Michael Savage and Fabio Scotoni.
+
+It is dual-licensed under the [2-clause BSD licence][bsd-mono] and [CC0][cc0]. Rouvre uses it to verify the signature of the bundle index.
+
+[Monocypher]: https://monocypher.org
+[bsd-mono]: https://github.com/LoupVaillant/Monocypher/blob/master/LICENCE.md
+[cc0]: https://creativecommons.org/publicdomain/zero/1.0/
+
 [Onigmo]: https://github.com/k-takata/Onigmo
 [Oniguruma]: https://github.com/kkos/oniguruma
 [bsd-onig]: https://raw.github.com/k-takata/Onigmo/master/COPYING
