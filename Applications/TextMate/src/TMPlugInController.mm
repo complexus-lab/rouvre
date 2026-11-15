@@ -153,7 +153,7 @@ static id CreateInstanceOfPlugInClass (Class cl, TMPlugInController* controller)
 	{
 		NSAlert* alert        = [[NSAlert alloc] init];
 		alert.messageText     = @"Cannot Install Plug-in";
-		alert.informativeText = [NSString stringWithFormat:@"The %@ plug-in is not compatible with this version of TextMate.", plugInName];
+		alert.informativeText = [NSString stringWithFormat:@"The %@ plug-in is not compatible with this version of Rouvre.", plugInName];
 		[alert addButtonWithTitle:@"Continue"];
 		[alert runModal];
 		return;
@@ -164,7 +164,7 @@ static id CreateInstanceOfPlugInClass (Class cl, TMPlugInController* controller)
 	{
 		NSAlert* alert        = [[NSAlert alloc] init];
 		alert.messageText     = @"Cannot Install Plug-in";
-		alert.informativeText = [NSString stringWithFormat:@"The %@ plug-in should not be used with this version of TextMate because of stability problems.", plugInName];
+		alert.informativeText = [NSString stringWithFormat:@"The %@ plug-in should not be used with this version of Rouvre because of stability problems.", plugInName];
 		[alert addButtonWithTitle:@"Continue"];
 		[alert runModal];
 		return;
@@ -209,7 +209,7 @@ static id CreateInstanceOfPlugInClass (Class cl, TMPlugInController* controller)
 		{
 			NSAlert* alert        = [[NSAlert alloc] init];
 			alert.messageText     = @"Plug-in Installed";
-			alert.informativeText = [NSString stringWithFormat:@"To activate “%@” you will need to relaunch TextMate.", plugInName];
+			alert.informativeText = [NSString stringWithFormat:@"To activate “%@” you will need to relaunch Rouvre.", plugInName];
 			[alert addButtons:@"Relaunch", @"Cancel", nil];
 			if([alert runModal] == NSAlertFirstButtonReturn) // "Relaunch"
 				oak::application_t::relaunch();

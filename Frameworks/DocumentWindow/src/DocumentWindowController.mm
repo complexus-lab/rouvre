@@ -2317,12 +2317,12 @@ static NSArray* const kObservedKeyPaths = @[ @"arrayController.arrangedObjects.p
 // = Touch Bar =
 // =============
 
-static NSTouchBarItemIdentifier kTouchBarCustomizationIdentifier = @"com.macromates.TextMate.touch-bar.customization-identifier";
-static NSTouchBarItemIdentifier kTouchBarTabNavigationIdentifier = @"com.macromates.TextMate.touch-bar.tab-navigation";
-static NSTouchBarItemIdentifier kTouchBarNewTabItemIdentifier    = @"com.macromates.TextMate.touch-bar.new-tab";
-static NSTouchBarItemIdentifier kTouchBarQuickOpenItemIdentifier = @"com.macromates.TextMate.touch-bar.quick-open";
-static NSTouchBarItemIdentifier kTouchBarFindItemIdentifier      = @"com.macromates.TextMate.touch-bar.find";
-static NSTouchBarItemIdentifier kTouchBarFavoritesItemIdentifier = @"com.macromates.TextMate.touch-bar.favorites";
+static NSTouchBarItemIdentifier kTouchBarCustomizationIdentifier = @"io.github.thierrysays.Rouvre.touch-bar.customization-identifier";
+static NSTouchBarItemIdentifier kTouchBarTabNavigationIdentifier = @"io.github.thierrysays.Rouvre.touch-bar.tab-navigation";
+static NSTouchBarItemIdentifier kTouchBarNewTabItemIdentifier    = @"io.github.thierrysays.Rouvre.touch-bar.new-tab";
+static NSTouchBarItemIdentifier kTouchBarQuickOpenItemIdentifier = @"io.github.thierrysays.Rouvre.touch-bar.quick-open";
+static NSTouchBarItemIdentifier kTouchBarFindItemIdentifier      = @"io.github.thierrysays.Rouvre.touch-bar.find";
+static NSTouchBarItemIdentifier kTouchBarFavoritesItemIdentifier = @"io.github.thierrysays.Rouvre.touch-bar.favorites";
 
 - (NSTouchBar*)makeTouchBar
 {

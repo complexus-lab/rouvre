@@ -54,6 +54,6 @@ fi
 # ========================
 
 if [[ -d "$builddir" ]];
-	then bin/rave -crelease -tTextMate -b"$builddir"
-	else bin/rave -crelease -tTextMate
+	then bin/rave -crelease -tRouvre -b"$builddir"
+	else bin/rave -crelease -tRouvre
 fi

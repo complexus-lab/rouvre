@@ -1,4 +1,4 @@
-target "TextMateQL" {
+target "RouvreQL" {
 	require OakFoundation buffer bundles cf file io ns plist scope settings theme
 
 	prefix "${target}.qlgenerator/Contents"

@@ -40,20 +40,20 @@ jobs:
     - name: Build
       run: |
         set -o pipefail
-        ninja -k 0 TextMate 2>&1 | tee build.log
+        ninja -k 0 Rouvre 2>&1 | tee build.log
 
     - name: Verify bundle
       run: |
-        app="$HOME/build/rouvre/release/Applications/TextMate/TextMate.app"
+        app="$HOME/build/rouvre/release/Applications/TextMate/Rouvre.app"
         codesign --verify --deep --strict "$app"
-        lipo -archs "$app/Contents/MacOS/TextMate"
-        otool -l "$app/Contents/MacOS/TextMate" | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX' | grep -E 'minos|version|sdk'
+        lipo -archs "$app/Contents/MacOS/Rouvre"
+        otool -l "$app/Contents/MacOS/Rouvre" | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX' | grep -E 'minos|version|sdk'
 
     # The application must run on a machine without Homebrew: every Mach-O
     # file in the bundle may only load system libraries or bundled ones.
     - name: Verify library dependencies
       run: |
-        app="$HOME/build/rouvre/release/Applications/TextMate/TextMate.app"
+        app="$HOME/build/rouvre/release/Applications/TextMate/Rouvre.app"
         bad=0
         while IFS= read -r -d '' f; do
           file -b "$f" | grep -q 'Mach-O' || continue
@@ -64,18 +64,18 @@ jobs:
             bad=1
           fi
         done < <(find "$app" -type f -print0)
-        otool -L "$app/Contents/MacOS/TextMate"
+        otool -L "$app/Contents/MacOS/Rouvre"
         exit $bad
 
     # ditto keeps symlinks, permissions and the code signature intact.
     - name: Package application
-      run: ditto -c -k --keepParent "$HOME/build/rouvre/release/Applications/TextMate/TextMate.app" "$RUNNER_TEMP/TextMate-arm64.zip"
+      run: ditto -c -k --keepParent "$HOME/build/rouvre/release/Applications/TextMate/Rouvre.app" "$RUNNER_TEMP/Rouvre-arm64.zip"
 
     - name: Upload application
       uses: actions/upload-artifact@v4
       with:
         name: app-arm64
-        path: ${{ runner.temp }}/TextMate-arm64.zip
+        path: ${{ runner.temp }}/Rouvre-arm64.zip
         retention-days: 14
         compression-level: 0
 

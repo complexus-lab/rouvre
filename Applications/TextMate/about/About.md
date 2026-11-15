@@ -1,11 +1,11 @@
-Title: About TextMate
+Title: About Rouvre
 
-## TextMate version <script>document.write(TextMate.version)</script>
+## Rouvre version <script>document.write(TextMate.version)</script>
 
-The manual is a work in progress and can be found at <https://macromates.com/textmate/manual/>. The MacroMates Blog has a [TextMate 2 category](https://blog.macromates.com/categories/textmate-2/).
+Rouvre is an independent fork of the TextMate 2 source code, maintained at <https://github.com/thierrysays/rouvre>. It has no affiliation with the original publisher or author.
 
-There is a [FAQ](https://github.com/textmate/textmate/wiki/FAQ) and [hidden settings](https://github.com/textmate/textmate/wiki/Hidden-Settings) page.
+The user manual is available from the Help menu. It was written for TextMate 2 and describes the same features.
 
-For comments, questions, and general feedback see <https://macromates.com/support>
+For bug reports and questions see the [issue tracker](https://github.com/thierrysays/rouvre/issues).
 
-_TextMate is a trademark of Allan Odgaard and the program is <script>document.write(TextMate.copyright)</script>._
+_The program is <script>document.write(TextMate.copyright)</script> It is released under the GNU General Public License, version 3 or later._

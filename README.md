@@ -13,8 +13,8 @@ This is work in progress. There are no binary releases.
 | Source | Upstream commit `346b52b` (12 October 2021) plus the changes in this repository |
 | Build | Compiles, links and signs on macOS 15 with Apple Silicon (arm64 only); the resulting application has not yet been launched or tested |
 | Tests | Not runnable: the build generator does not yet emit rules for the `tests` directives |
-| Naming | The application, its bundle identifiers and its command-line tools still carry the upstream names; renaming is planned |
-| Online services | Software update, the bundle index and crash reporting still point to upstream servers that this fork does not operate |
+| Naming | The application is `Rouvre.app` with the identifier `io.github.thierrysays.Rouvre`. Names that bundles and scripts depend on are kept: the `mate` command, the `TM_*` variables, the `TextMate` JavaScript object, the `com.macromates.textmate.*` file types and the `~/Library/Application Support/TextMate` folder |
+| Online services | Software update and crash reporting are switched off. The bundle index is still fetched from the upstream server, which this fork does not operate |
 
 ## Feedback
 
@@ -49,10 +49,10 @@ Clone with submodules, then run `./configure` followed by `ninja`:
 ```sh
 git clone --recursive https://github.com/thierrysays/rouvre.git
 cd rouvre
-./configure && ninja TextMate/run
+./configure && ninja Rouvre/run
 ```
 
-`./configure` checks that the dependencies can be found and calls `bin/rave` to generate `build.ninja`, with the default config set to `release` and the default target set to `TextMate`.
+`./configure` checks that the dependencies can be found and calls `bin/rave` to generate `build.ninja`, with the default config set to `release` and the default target set to `Rouvre`.
 
 The dependency location is detected in this order: the `PREFIX` environment variable, `brew --prefix`, `/opt/local` (MacPorts), `/usr/local`. To force a location:
 
@@ -69,8 +69,8 @@ Build output goes to `~/build/rouvre` unless the `builddir` environment variable
 ### Build targets
 
 ```sh
-ninja TextMate      # Build and sign the application
-ninja TextMate/run  # Build, sign, and (re)launch the application
+ninja Rouvre      # Build and sign the application
+ninja Rouvre/run  # Build, sign, and (re)launch the application
 ```
 
 The application is signed ad hoc (`CS_IDENTITY` is `-` in `default.rave`). Set `CS_IDENTITY` in `local.rave` to sign with your own Developer ID.
@@ -87,7 +87,7 @@ Or delete the build directory.
 
 Install the [Ninja][NinjaBundle] bundle, then press ⌘B. Set the `PATH` variable in _Preferences_ → _Variables_ or in `~/.tm_properties` so that `ninja` and the other tools are found, for example `$PATH:/opt/homebrew/bin`.
 
-The default target, set in `.tm_properties`, is `TextMate/run`. If the current file belongs to another application target, `TM_NINJA_TARGET` builds and runs that application instead.
+The default target, set in `.tm_properties`, is `Rouvre/run`. If the current file belongs to another application target, `TM_NINJA_TARGET` builds and runs that application instead.
 
 ### Continuous integration
 

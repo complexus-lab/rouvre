@@ -113,7 +113,7 @@ void InstallBundleItems (NSArray* itemPaths)
 		{
 			NSAlert* alert        = [[NSAlert alloc] init];
 			alert.messageText     = [NSString stringWithFormat:@"Would you like to install the “%@” bundle?", [NSString stringWithCxxString:info.name]];
-			alert.informativeText = @"Installing a bundle adds new functionality to TextMate.";
+			alert.informativeText = @"Installing a bundle adds new functionality to Rouvre.";
 			[alert addButtons:@"Install", @"Cancel", nil];
 			if([alert runModal] == NSAlertFirstButtonReturn) // "Install"
 			{

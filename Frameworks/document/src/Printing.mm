@@ -273,6 +273,6 @@
 
 - (NSString*)title
 {
-	return @"TextMate";
+	return @"Rouvre";
 }
 @end
