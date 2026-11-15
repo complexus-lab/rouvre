@@ -13,16 +13,25 @@ done
 if [[ -e local.rave ]]; then
 	echo >&2 "Skipping writing ‘local.rave’: File already exists"
 else
-	echo >> local.rave 'add FLAGS    "-I/usr/local/include"'
-	echo >> local.rave 'add LN_FLAGS "-L/usr/local/lib"'
+	# Homebrew installs under /opt/homebrew on Apple Silicon and /usr/local on
+	# Intel; MacPorts uses /opt/local. PREFIX overrides the detection.
+	if [[ -z "$PREFIX" ]]; then
+		if which -s brew; then PREFIX="$(brew --prefix)"
+		elif [[ -d /opt/local/include ]]; then PREFIX=/opt/local
+		else PREFIX=/usr/local
+		fi
+	fi
 
 	for hdr in boost/{crc,variant}.hpp capnp/{message,serialize-packed}.h sparsehash/dense_hash_map; do
-		test -f "/usr/local/include/${hdr}" || error "*** dependency missing: ‘/usr/local/include/${hdr}’. Install dependency and/or update ‘local.rave’ with correct path."
+		test -f "${PREFIX}/include/${hdr}" || error "*** dependency missing: ‘${PREFIX}/include/${hdr}’. Install dependency or rerun with PREFIX set to the right location."
 	done
 
 	for lib in capnp kj; do
-		test -f "/usr/local/lib/lib${lib}."* || error "*** dependency missing: ‘/usr/local/lib/lib${lib}.*’. Install dependency and/or update ‘local.rave’ with correct path."
+		test -f "${PREFIX}/lib/lib${lib}."* || error "*** dependency missing: ‘${PREFIX}/lib/lib${lib}.*’. Install dependency or rerun with PREFIX set to the right location."
 	done
+
+	echo >> local.rave "add FLAGS    \"-I${PREFIX}/include\""
+	echo >> local.rave "add LN_FLAGS \"-L${PREFIX}/lib\""
 fi
 
 # ========================

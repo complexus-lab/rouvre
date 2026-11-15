@@ -33,14 +33,8 @@ jobs:
     - name: Dependencies
       run: brew install boost capnp google-sparsehash multimarkdown ninja ragel
 
-    # ./configure only knows /usr/local; Homebrew lives in /opt/homebrew on
-    # Apple Silicon. An existing local.rave makes ./configure skip its own
-    # path probing.
     - name: Configure
-      run: |
-        prefix="$(brew --prefix)"
-        printf 'add FLAGS    "-I%s/include"\nadd LN_FLAGS "-L%s/lib"\n' "$prefix" "$prefix" > local.rave
-        ./configure
+      run: ./configure && cat local.rave
 
     # -k 0 keeps going after failures so one run reports every broken file.
     - name: Build
@@ -48,18 +42,33 @@ jobs:
         set -o pipefail
         ninja -k 0 TextMate 2>&1 | tee build.log
 
-    - name: Error summary
+    - name: Verify bundle
+      run: |
+        app="$HOME/build/rouvre/release/Applications/TextMate/TextMate.app"
+        codesign --verify --deep --strict "$app"
+        lipo -archs "$app/Contents/MacOS/TextMate"
+        otool -l "$app/Contents/MacOS/TextMate" | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX' | grep -E 'minos|version|sdk'
+
+    - name: Diagnostics summary
       if: always()
       run: |
+        strip='s/^.*\/(Frameworks|Applications|PlugIns|vendor|Shared)\//\1\//'
         {
-          echo '### Build errors'
+          echo '### Build diagnostics'
           echo
           echo "Failed edges: $(grep -c '^FAILED:' build.log || true)"
+          echo "Errors: $(grep -cE '(error|fatal error):' build.log || true)"
+          echo "Warnings: $(grep -c 'warning:' build.log || true)"
           echo
+          echo '#### Errors'
           echo '```'
-          grep -E '(error|fatal error):' build.log | sed -E 's/^.*\/(Frameworks|Applications|PlugIns|vendor|Shared)\//\1\//' | sort | uniq -c | sort -rn | head -200
+          grep -E '(error|fatal error):' build.log | sed -E "$strip" | sort | uniq -c | sort -rn | head -200
           echo '```'
-        } >> "$GITHUB_STEP_SUMMARY"
+          echo '#### Warnings by flag'
+          echo '```'
+          grep 'warning:' build.log | grep -oE '\[-W[^]]+\]' | sort | uniq -c | sort -rn | head -50
+          echo '```'
+        } | tee -a "$GITHUB_STEP_SUMMARY"
 
     - name: Upload build log
       if: always()
