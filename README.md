@@ -6,7 +6,7 @@ Rouvre is maintained at <https://github.com/complexus-lab/rouvre>. It has no aff
 
 ## Status
 
-This is work in progress. There are no binary releases.
+This is work in progress. There are no binary releases. Rouvre requires macOS 15 or later.
 
 | Area | State |
 |---|---|
