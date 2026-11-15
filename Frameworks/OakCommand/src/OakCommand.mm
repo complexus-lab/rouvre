@@ -21,7 +21,7 @@
 #import <BundleEditor/BundleEditor.h>
 
 NSNotificationName const OakCommandDidTerminateNotification = @"OakCommandDidTerminateNotification";
-NSString* const OakCommandErrorDomain                       = @"io.github.thierrysays.Rouvre.ErrorDomain";
+NSString* const OakCommandErrorDomain                       = @"io.github.complexus-lab.Rouvre.ErrorDomain";
 
 static NSString* const kOakFileHandleURLScheme = @"x-txmt-filehandle";
 

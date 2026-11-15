@@ -2317,12 +2317,12 @@ static NSArray* const kObservedKeyPaths = @[ @"arrayController.arrangedObjects.p
 // = Touch Bar =
 // =============
 
-static NSTouchBarItemIdentifier kTouchBarCustomizationIdentifier = @"io.github.thierrysays.Rouvre.touch-bar.customization-identifier";
-static NSTouchBarItemIdentifier kTouchBarTabNavigationIdentifier = @"io.github.thierrysays.Rouvre.touch-bar.tab-navigation";
-static NSTouchBarItemIdentifier kTouchBarNewTabItemIdentifier    = @"io.github.thierrysays.Rouvre.touch-bar.new-tab";
-static NSTouchBarItemIdentifier kTouchBarQuickOpenItemIdentifier = @"io.github.thierrysays.Rouvre.touch-bar.quick-open";
-static NSTouchBarItemIdentifier kTouchBarFindItemIdentifier      = @"io.github.thierrysays.Rouvre.touch-bar.find";
-static NSTouchBarItemIdentifier kTouchBarFavoritesItemIdentifier = @"io.github.thierrysays.Rouvre.touch-bar.favorites";
+static NSTouchBarItemIdentifier kTouchBarCustomizationIdentifier = @"io.github.complexus-lab.Rouvre.touch-bar.customization-identifier";
+static NSTouchBarItemIdentifier kTouchBarTabNavigationIdentifier = @"io.github.complexus-lab.Rouvre.touch-bar.tab-navigation";
+static NSTouchBarItemIdentifier kTouchBarNewTabItemIdentifier    = @"io.github.complexus-lab.Rouvre.touch-bar.new-tab";
+static NSTouchBarItemIdentifier kTouchBarQuickOpenItemIdentifier = @"io.github.complexus-lab.Rouvre.touch-bar.quick-open";
+static NSTouchBarItemIdentifier kTouchBarFindItemIdentifier      = @"io.github.complexus-lab.Rouvre.touch-bar.find";
+static NSTouchBarItemIdentifier kTouchBarFavoritesItemIdentifier = @"io.github.complexus-lab.Rouvre.touch-bar.favorites";
 
 - (NSTouchBar*)makeTouchBar
 {

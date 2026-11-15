@@ -161,7 +161,7 @@ See [commits at GitHub][1].
     </tr>
 <%
 require 'bin/gen_credits'
-credits = generate_credits(File.expand_path('~/Library/Caches/io.github.thierrysays.Rouvre/githubcredits'))
+credits = generate_credits(File.expand_path('~/Library/Caches/io.github.complexus-lab.Rouvre/githubcredits'))
 %>
 <%= credits %>
 </table>

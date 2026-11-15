@@ -23,7 +23,7 @@ static void DisableImplicitAnimationForBlock (void(^handler)())
 // = OakTabItem =
 // ==============
 
-static NSString* const OakTabItemPasteboardType = @"io.github.thierrysays.Rouvre.tabItem";
+static NSString* const OakTabItemPasteboardType = @"io.github.complexus-lab.Rouvre.tabItem";
 
 @class OakTabView;
 

@@ -165,7 +165,7 @@ Not everything on the wishlist made it into 2.0, but TextMate remains a work in 
 
     Then run this command to obtain the log:
 
-        log show --predicate 'subsystem = "io.github.thierrysays.Rouvre" && category = "BringToFront"'
+        log show --predicate 'subsystem = "io.github.complexus-lab.Rouvre" && category = "BringToFront"'
 
     See `man log` for options such as `--start date/time` (to limit the query to e.g. the last 10 minutes).
 
@@ -227,12 +227,12 @@ For this reason, there is a new setting to control when and how TextMate should 
 ## 2018-12-02 (v2.0-rc.20)
 
 * Document tabs now use “titlebar material” to be a better fit for macOS 10.14.
-* Status bar font size has been increased to 12 pt and can be changed by using `defaults write io.github.thierrysays.Rouvre statusBarFontSize 13`.
+* Status bar font size has been increased to 12 pt and can be changed by using `defaults write io.github.complexus-lab.Rouvre statusBarFontSize 13`.
 * See [all changes since v2.0-rc.18](https://github.com/textmate/textmate/compare/v2.0-rc.18...v2.0-rc.20)
 
 ## 2018-11-14 (v2.0-rc.18)
 
-* If you run `defaults write io.github.thierrysays.Rouvre changeThemeBasedOnAppearance -bool YES` then TextMate will switch theme based on appearance (light/dark). The themes used can be controlled using the `darkModeThemeUUID` and `universalThemeUUID` defaults keys. *[Ronald Wampler]*
+* If you run `defaults write io.github.complexus-lab.Rouvre changeThemeBasedOnAppearance -bool YES` then TextMate will switch theme based on appearance (light/dark). The themes used can be controlled using the `darkModeThemeUUID` and `universalThemeUUID` defaults keys. *[Ronald Wampler]*
 * The document tabs have been moved to the titlebar, this means that file browser header can no longer be merged with the tab bar, automatically hiding the tab bar (when there is only one tab) is only possible when running macOS 10.12 or later, and currently the light tabs do not match the title bar background color on 10.14. The last one will be fixed in an upcoming build (to have active tab use “titlebar material”). The first one is probably not coming back anytime soon.
 * See [all changes since v2.0-rc.15](https://github.com/textmate/textmate/compare/v2.0-rc.15...v2.0-rc.18)
 
@@ -246,8 +246,8 @@ For this reason, there is a new setting to control when and how TextMate should 
 * Holding down option (⌥) when opening a file will ensure it opens in a new window (instead of existing project).
 * File browser now supports setting multiple tags on items instead of the previous single label system. *[Ronald Wampler]*
 * It is possible to set `excludeSCMDeleted = true` in a `.tm_properties` file to hide the “ghost” items that appear after deleting a file on disk which is still tracked by your version control system. *[Ian Gregory]*
-* To have file packages expandable in the file browser (like directories) run: `defaults write io.github.thierrysays.Rouvre allowExpandingPackages -bool YES`. If you do work with a lot of file packages be aware that it is also possible to hold option (⌥) when you either double-click the item’s label or single click the icon, to descend into the file package.
-* The list of default file globs used when searching folders can be set, for example `defaults write io.github.thierrysays.Rouvre defaultFindInFolderGlobs '( "{*,.tm_properties}", "*" )'`. Be aware that unique history is kept per folder, to clear your existing history run: `defaults delete io.github.thierrysays.Rouvre 'Find in Folder Globs'`.
+* To have file packages expandable in the file browser (like directories) run: `defaults write io.github.complexus-lab.Rouvre allowExpandingPackages -bool YES`. If you do work with a lot of file packages be aware that it is also possible to hold option (⌥) when you either double-click the item’s label or single click the icon, to descend into the file package.
+* The list of default file globs used when searching folders can be set, for example `defaults write io.github.complexus-lab.Rouvre defaultFindInFolderGlobs '( "{*,.tm_properties}", "*" )'`. Be aware that unique history is kept per folder, to clear your existing history run: `defaults delete io.github.complexus-lab.Rouvre 'Find in Folder Globs'`.
 * The behavior of control up/down has changed slightly: Previously these keys would (also) “skip” the current paired sequence when next to an opening/closing character, for example pressing control down with `foo‸(bar);` would move the insertion point past the braces, i.e.: `foo(bar)‸;`. This is no longer the case, and the keys will always move to the opening/closing character of the current pair that the insertion point is inside.
 * File browser has seen major overhaul: Little difference from the user’s POV but the performance characteristics may have changed slightly, please report any issues to the [mailing list or support](https://macromates.com/support). Furthermore, we no longer support saved searches, alias files, inline-expansion of recursive symbolic link (beyond the first), and setting the file browser to render as a “source list” has also been dropped. If you miss any of these things, please let us know.
 * Dark mode support: Some minor issues still to be addressed, most noticeable is probably main window’s title bar, find dialog’s search/replace strings when enabling regular expression searching, and of course this window :)
@@ -292,7 +292,7 @@ For this reason, there is a new setting to control when and how TextMate should 
 
 ## 2016-10-23 (v2.0-beta.12.26)
 
-* TextMate’s bundle identifier has been changed to `io.github.thierrysays.Rouvre` (previously it had a `preview` suffix). This is the same bundle identifier as TextMate 1.x so if you still have TextMate 1.x installed then we recommend to simply delete it.
+* TextMate’s bundle identifier has been changed to `io.github.complexus-lab.Rouvre` (previously it had a `preview` suffix). This is the same bundle identifier as TextMate 1.x so if you still have TextMate 1.x installed then we recommend to simply delete it.
 
 	The changed bundle identifier may cause a compatibility issue with third party software, particularly software that offers an “Open in TextMate 2”, there is unfortunately no nice solution to this problem other than request that the software is updated to use the new (old) bundle identifier.
 
@@ -360,8 +360,8 @@ For this reason, there is a new setting to control when and how TextMate should 
 * The `fontName` and `fontSize` settings in `.tm_properties` can now be set in a file type section to use different fonts for different file types or locations.
 * The search results font can be changed using the `searchResultsFontName` and `searchResultsFontSize` keys, e.g.:
 
-		defaults write io.github.thierrysays.Rouvre.preview searchResultsFontName Menlo
-		defaults write io.github.thierrysays.Rouvre.preview searchResultsFontSize -float 12
+		defaults write io.github.complexus-lab.Rouvre.preview searchResultsFontName Menlo
+		defaults write io.github.complexus-lab.Rouvre.preview searchResultsFontSize -float 12
 
 * See [all changes since v2.0-beta.12.4](https://github.com/textmate/textmate/compare/v2.0-beta.12.4...v2.0-beta.12.5)
 
@@ -454,7 +454,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 
 * The release version of the Emmet TextMate plug-in crashes on launch and has done so for years, so it is now blacklisted by default. There is a new version linked to from [this GitHub issue](https://github.com/emmetio/Emmet.tmplugin/issues/10) which does work. If you are using that version, you can clear TextMate’s blacklist by setting it to an empty array done by running this in a terminal:
 
-		defaults write io.github.thierrysays.Rouvre.preview disabledPlugIns -array
+		defaults write io.github.complexus-lab.Rouvre.preview disabledPlugIns -array
 
 * If `git` or `svn` is found in `/usr/bin` then we check if Xcode is installed (by calling `/usr/bin/xcode-select -p`) and if not, we ignore the executable. This is because it is a shim that prompts the user to install Xcode, which has lead to some user confusion. Note though that we do not call `git` or `svn` unless we actually find a `.git` or `.svn` folder in your project.
 
@@ -501,7 +501,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 * You can now use ⌥⌘V in the file browser to “move” the item on the clipboard to the current folder. This makes it possible to copy files from Finder and “move” to the location in TextMate’s file browser and thus the old way of moving files via keyboard (⌘X + ⌘V) is deprecated and will be removed.
 * Double-tapping shift will now also leave “freehanded mode”.
 * Support spell checking being “automatic by language”. This is set via the spelling panel.
-* The line number scale factor can be set via the `lineNumberScaleFactor` user defaults key. It defaults to 0.8. If you want line numbers to be same size as main text, run the following in a terminal: `defaults write io.github.thierrysays.Rouvre.preview lineNumberScaleFactor -float 1`.
+* The line number scale factor can be set via the `lineNumberScaleFactor` user defaults key. It defaults to 0.8. If you want line numbers to be same size as main text, run the following in a terminal: `defaults write io.github.complexus-lab.Rouvre.preview lineNumberScaleFactor -float 1`.
 * See [all changes since v2.0-beta.7.4](https://github.com/textmate/textmate/compare/v2.0-beta.7.4...v2.0-beta.8)
 
 ## 2015-06-13 (v2.0-beta.7.2)
@@ -529,7 +529,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 
 ## 2015-01-19 (v2.0-beta.6.7)
 
-* You can have the recent projects / favorites list shown on startup and re-activation (instead of having an untitled window created). To enable this behavior run: `defaults write io.github.thierrysays.Rouvre.preview showFavoritesInsteadOfUntitled -bool YES` *[Anton]*
+* You can have the recent projects / favorites list shown on startup and re-activation (instead of having an untitled window created). To enable this behavior run: `defaults write io.github.complexus-lab.Rouvre.preview showFavoritesInsteadOfUntitled -bool YES` *[Anton]*
 * Improve heuristic that looks up actions based on key events. If you have a non-Latin keyboard and see unexpected behavior wrt. triggering actions via their key equivalents, let me now (e.g. via [the mailing list](http://lists.macromates.com/listinfo/textmate)).
 * See [all changes since v2.0-beta.6.4](https://github.com/textmate/textmate/compare/v2.0-beta.6.4...v2.0-beta.6.7)
 
@@ -552,7 +552,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 ## 2014-10-29 (v2.0-beta.5)
 
 * Items in the bundle editor now have a context menu with “Show in Finder”. For items with local changes, this item turns into a submenu, showing all the location of the item.
-* Closing stale tabs when the tab bar overflows can be disabled using `defaults write io.github.thierrysays.Rouvre.preview disableTabAutoClose -bool YES`.
+* Closing stale tabs when the tab bar overflows can be disabled using `defaults write io.github.complexus-lab.Rouvre.preview disableTabAutoClose -bool YES`.
 * Swapped key equivalents of _“New File”_ and _“New Folder”_ actions to make it somewhat consistent with Finder.
 * See [all changes since v2.0-beta.3](https://github.com/textmate/textmate/compare/v2.0-beta.3...v2.0-beta.5).
 
@@ -602,7 +602,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 ## 2014-08-17 ([v2.0-alpha.9559](https://github.com/textmate/textmate/compare/v2.0-alpha.9555...v2.0-alpha.9559))
 
 * The bundle item chooser (⌃⌘T) now include menu items. This also works with key equivalent searching.
-* In the chooser lists (fuzzy file finder, bundle item chooser, and symbol list) it is now possible to make the selection loop around, that is, move from first to last item with arrow up, etc. This is enabled by running: `defaults write io.github.thierrysays.Rouvre.preview enableLoopFilterList -bool YES` *[Zete Lui]*
+* In the chooser lists (fuzzy file finder, bundle item chooser, and symbol list) it is now possible to make the selection loop around, that is, move from first to last item with arrow up, etc. This is enabled by running: `defaults write io.github.complexus-lab.Rouvre.preview enableLoopFilterList -bool YES` *[Zete Lui]*
 
 ## 2014-07-31 ([v2.0-alpha.9555](https://github.com/textmate/textmate/compare/v2.0-alpha.9551...v2.0-alpha.9555))
 
@@ -656,7 +656,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 
 ## 2014-04-12 ([v2.0-alpha.9533](https://github.com/textmate/textmate/compare/v2.0-alpha.9531...v2.0-alpha.9533))
 
-* You can disable the status bar using `defaults write io.github.thierrysays.Rouvre.preview hideStatusBar -bool YES`. Be aware that currently not all of the status bar actions have menu equivalents.
+* You can disable the status bar using `defaults write io.github.complexus-lab.Rouvre.preview hideStatusBar -bool YES`. Be aware that currently not all of the status bar actions have menu equivalents.
 * _Text → Filter Through Command…_ (⌘|) now has a _“New Document”_ (⌘3) output option.
 * _View → Wrap Column_ now remember the last 5 values used.
 
@@ -698,7 +698,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 
     The feature can be disabled using:
 
-        defaults write io.github.thierrysays.Rouvre.preview disableFolderStateRestore -bool YES
+        defaults write io.github.complexus-lab.Rouvre.preview disableFolderStateRestore -bool YES
 
   * Commands executed by TextMate can now be interrupted by pressing ⌘. or ⌃C.
 
@@ -713,7 +713,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 ## 2013-11-03 ([v2.0-alpha.9495](https://github.com/textmate/textmate/compare/v2.0-alpha.9489...v2.0-alpha.9495))
 
 * If the _Go to File_ filter string contains an asterisk (`*`) it will be considered a file glob. Support for extension matching (by using a period in the filter string) has been removed. It did more harm than good, and the same can now be achieved by using an explicit glob string.
-* The zoom animation shown when opening items can now be disabled by running this in a terminal: `defaults write io.github.thierrysays.Rouvre.preview fileBrowserOpenAnimationDisabled -bool YES`
+* The zoom animation shown when opening items can now be disabled by running this in a terminal: `defaults write io.github.complexus-lab.Rouvre.preview fileBrowserOpenAnimationDisabled -bool YES`
 * You can now define word characters similar to 1.x by creating a new setting in the bundle editor with this content:
 
 		{ wordCharacters = «value»; }
@@ -724,7 +724,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 
 * Opening files in the file browser can be done by single-clicking the icon. If you think the click-target is too small, you can make it open by clicking the text instead, this is activated by running the following in a terminal:
 
-        defaults write io.github.thierrysays.Rouvre.preview fileBrowserSingleClickToOpen -bool true
+        defaults write io.github.complexus-lab.Rouvre.preview fileBrowserSingleClickToOpen -bool true
 
     If you wish to select items you either need to click to the left of the text, or hold down command (⌘) when clicking the item’s text.
 
@@ -770,7 +770,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 
 * Add Quick Look generator for file types conforming to `public.source-code`. *[Jacob Bandes-Storch]*
 * Folder search now supports UTF-16/32 encoding. If document is not in UTF, TextMate will try a potential `encoding` set in `.tm_properties` (in a `attr.file.unknown-encoding` section). *[Jasmin Lapalme]*
-* Add source list style setting for the file browser. Run `defaults write io.github.thierrysays.Rouvre.preview fileBrowserStyle SourceList` and relaunch TextMate to enable. *[Jacob Carlborg]*
+* Add source list style setting for the file browser. Run `defaults write io.github.complexus-lab.Rouvre.preview fileBrowserStyle SourceList` and relaunch TextMate to enable. *[Jacob Carlborg]*
 
 ## 2013-07-23 ([a9449](https://github.com/textmate/textmate/compare/a9443...a9449))
 
@@ -843,7 +843,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 
 * By default “font smoothing” is now disabled for dark themes. Font smoothing often makes light text on dark backgrounds look bolder than desired, should you however wish to have font smoothing enabled (for dark themes) you can run:
 
-		defaults write io.github.thierrysays.Rouvre.preview fontSmoothing 1
+		defaults write io.github.complexus-lab.Rouvre.preview fontSmoothing 1
 
 * The table showing bundles in preferences now use sortable columns. *[Steven Clukey]*
 * Added API to OakTextView to support the [Emmet plug-in](https://github.com/emmetio/Emmet.tmplugin). *[Sergey Chikuyonok]*
@@ -854,7 +854,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 * Setup document scope `attr.project.lein` for [Leiningen](https://github.com/technomancy/leiningen) projects. *[Dirk Geurs]*
 * Auto-paired characters can now be globally disabled using:
 
-		defaults write io.github.thierrysays.Rouvre.preview disableTypingPairs -bool YES
+		defaults write io.github.complexus-lab.Rouvre.preview disableTypingPairs -bool YES
 
 ## 2013-03-27 ([a9407](https://github.com/textmate/textmate/compare/a9405...a9407))
 
@@ -864,7 +864,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 ## 2013-03-26 ([a9405](https://github.com/textmate/textmate/compare/a9403...a9405))
 
 * When using `$` in a scope selector we anchor the match to the content scope’s end. For example `string $` will match `source string attr.scm.git` because the last part (`attr.scm.git`) is not part of the content scope. *[Joachim Mårtensson]*
-* Installing bundles from within TextMate should no longer stall/fail on volumes where file system events are not generated. Installing from outside TextMate still require proper events to be generated. If your bundles are stored on a volume that does not generate these events then you will need to delete `~/Library/Caches/io.github.thierrysays.Rouvre/BundlesIndex.plist` and relaunch TextMate to have it re-index your `Bundles` folders. Normally local file systems do generate file system events but [problems appear to exist](https://github.com/andreyvit/find-fsevents-bugs).
+* Installing bundles from within TextMate should no longer stall/fail on volumes where file system events are not generated. Installing from outside TextMate still require proper events to be generated. If your bundles are stored on a volume that does not generate these events then you will need to delete `~/Library/Caches/io.github.complexus-lab.Rouvre/BundlesIndex.plist` and relaunch TextMate to have it re-index your `Bundles` folders. Normally local file systems do generate file system events but [problems appear to exist](https://github.com/andreyvit/find-fsevents-bugs).
 
 ## 2013-03-21 ([a9403](https://github.com/textmate/textmate/compare/a9401...a9403))
 
@@ -988,7 +988,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 
     Example:
 
-        defaults write io.github.thierrysays.Rouvre.preview environmentWhitelist '$default:MANPATH:*EDITOR'
+        defaults write io.github.complexus-lab.Rouvre.preview environmentWhitelist '$default:MANPATH:*EDITOR'
 
     Here ‘$default’ will expand to TextMate’s default whitelist.
 
@@ -1328,7 +1328,7 @@ I normally do not mention fixes in the release notes but since this is a regular
 
 * Added two new variables:
 
-	1. `TM_APP_IDENTIFIER` — bundles which need to read settings from TextMate should use this instead of hardcoding `io.github.thierrysays.Rouvre.preview`. Normally though bundles should **not** need to read TextMate settings except those they write themselves, for example the Preferences dialogs for various bundles are bound to TextMate’s user defaults.
+	1. `TM_APP_IDENTIFIER` — bundles which need to read settings from TextMate should use this instead of hardcoding `io.github.complexus-lab.Rouvre.preview`. Normally though bundles should **not** need to read TextMate settings except those they write themselves, for example the Preferences dialogs for various bundles are bound to TextMate’s user defaults.
 	2. `TM_CURRENT_THEME_PATH` — this is the path of the current theme. Incase the theme is in delta format, it points to the base theme, long-term TextMate may store a non-delta version in a temporary folder and let it point to that, so that bundles can always assume the theme is in non-delta format.
 
 * Various improvements to glob matching:
@@ -1799,8 +1799,8 @@ The source for TextMate 2 is now [available at GitHub][1] under a GPL 3 license.
 	The `group` is to allow mutually exclusive attributes. E.g. if a folder contains both a `Rakefile` and a `Makefile` entry, files in that folder only get the `attr.project.make` attribute set since the two tests are in same group (and the `Makefile` test is listed first).
 
 * Added _View → Show Wrap Column_ setting and corresponding `showWrapColumn` `.tm_properties` setting.
-* Introduced `fontLeadingDelta` and `fontAscentDelta` defaults keys. These must be set as floats or integers (not strings), e.g.: `defaults write io.github.thierrysays.Rouvre.preview fontLeadingDelta -float 0`. The default value for both keys is `1`.
-* Use of extended attributes can now be disabled. The defaults key is `volumeSettings` and the value is an associative array with path prefix and another associative array with settings for that path (presently only `extendedAttributes` is supported, but SCM badges, display names, and more is likely to appear). So if for example we wish to disable extended attributes for files under `/net/` we can do: `defaults write io.github.thierrysays.Rouvre.preview volumeSettings '{ "/net/" = { extendedAttributes = 0; }; }'`.
+* Introduced `fontLeadingDelta` and `fontAscentDelta` defaults keys. These must be set as floats or integers (not strings), e.g.: `defaults write io.github.complexus-lab.Rouvre.preview fontLeadingDelta -float 0`. The default value for both keys is `1`.
+* Use of extended attributes can now be disabled. The defaults key is `volumeSettings` and the value is an associative array with path prefix and another associative array with settings for that path (presently only `extendedAttributes` is supported, but SCM badges, display names, and more is likely to appear). So if for example we wish to disable extended attributes for files under `/net/` we can do: `defaults write io.github.complexus-lab.Rouvre.preview volumeSettings '{ "/net/" = { extendedAttributes = 0; }; }'`.
 * Some improvements to file chooser (⌘T):
 	- Current document is now included in list, and if typed exactly, will rank at top.
 	- Filter string is now down-cased with spaces removed before matching to cater to the habits of some users.
@@ -1810,7 +1810,7 @@ The source for TextMate 2 is now [available at GitHub][1] under a GPL 3 license.
 * The font size unit parser (for themes) is no longer locale sensitive (so period is always `.`).
 * The collapse/expand all button for the Find in Folder results did not properly refresh the outline view on Lion.
 * Implement option page up/down (for moving caret).
-* Set `initialFileBrowserURL` defaults key (to a URL) to change the initial location of the file browser (for new windows). E.g.: `defaults write io.github.thierrysays.Rouvre.preview initialFileBrowserURL "file://$HOME/Source/"`.
+* Set `initialFileBrowserURL` defaults key (to a URL) to change the initial location of the file browser (for new windows). E.g.: `defaults write io.github.complexus-lab.Rouvre.preview initialFileBrowserURL "file://$HOME/Source/"`.
 * Default location for `mate` is now `/usr/local/bin` (if it exists) as this is included in the `PATH` for most users.
 * Fix failure to install `mate` when the install path existed as a dead symbolic link.
 * Fix issues with involuntary (recursive) expansion of file browser.
@@ -1836,7 +1836,7 @@ The source for TextMate 2 is now [available at GitHub][1] under a GPL 3 license.
 
 	The approach in 2.0 also allows to run some code, for example reloading the currently open browsers, and it can be scoped e.g. to `text.html` to only have the “save on lost focus” enabled when editing HTML files — alternatively one can introduce a custom scope like `attr.save-on-deactivate` and set that for specific projects via a `scopeAttributes` setting in `.tm_properties`.
 
-* Tab bar can be made always visible: `defaults write io.github.thierrysays.Rouvre.preview disableTabBarCollapsing -bool YES`.
+* Tab bar can be made always visible: `defaults write io.github.complexus-lab.Rouvre.preview disableTabBarCollapsing -bool YES`.
 * Fix issue with indented soft wrap having the prefix string wider than the wrap column.
 * Fix issue with selection sent to commands needing entire document (e.g. ⌘R for Ruby, Python, etc.).
 * Fix issue with ⌃⇥ not always working to move focus to file browser.
@@ -1844,9 +1844,9 @@ The source for TextMate 2 is now [available at GitHub][1] under a GPL 3 license.
 
 ## 2011-12-16
 
-* HTML output can open in its own window: `defaults write io.github.thierrysays.Rouvre.preview htmlOutputPlacement window`.
-* Anti-alias can be disabled: `defaults write io.github.thierrysays.Rouvre.preview disableAntiAlias -bool YES`.
-* File browser can be placed on the right side: `defaults write io.github.thierrysays.Rouvre.preview fileBrowserPlacement right`.
+* HTML output can open in its own window: `defaults write io.github.complexus-lab.Rouvre.preview htmlOutputPlacement window`.
+* Anti-alias can be disabled: `defaults write io.github.complexus-lab.Rouvre.preview disableAntiAlias -bool YES`.
+* File browser can be placed on the right side: `defaults write io.github.complexus-lab.Rouvre.preview fileBrowserPlacement right`.
 * With multiple carets, ⌘-clicking one of them removes it (i.e. it’s a toggle).
 * Carriage returns (`<CR>`) on the general clipboard are converted to regular newlines when pasting.
 * Rename help book to “TextMate 2” which fixes issues where _Help → TextMate Help_ showed TextMate 1.5’s help book.

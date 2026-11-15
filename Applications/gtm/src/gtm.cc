@@ -101,7 +101,7 @@ static void load_bundle_index (bool verbose)
 {
 	oak::duration_t timer;
 
-	std::string const path = path::join(path::home(), "Library/Caches/io.github.thierrysays.Rouvre/BundlesIndex.binary");
+	std::string const path = path::join(path::home(), "Library/Caches/io.github.complexus-lab.Rouvre/BundlesIndex.binary");
 
 	plist::cache_t cache;
 	cache.load_capnp(path);
