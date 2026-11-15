@@ -60,6 +60,8 @@ The dependency location is detected in this order: the `PREFIX` environment vari
 PREFIX=/some/prefix ./configure
 ```
 
+Cap’n Proto is linked statically when its archives (`libcapnp.a`, `libkj.a`) are present, through a `.static-libs` directory created by `./configure`, so that the application runs on machines where the library is not installed.
+
 The detected paths are written to `local.rave`. Delete that file to run the detection again; if it exists, `./configure` leaves it untouched.
 
 Build output goes to `~/build/rouvre` unless the `builddir` environment variable names an existing directory.

@@ -31,8 +31,22 @@ else
 		test -f "$1" || error "*** dependency missing: ‘${PREFIX}/lib/lib${lib}.*’. Install dependency or rerun with PREFIX set to the right location."
 	done
 
+	# Link capnp and kj statically when archives are available, so the built
+	# application does not depend on libraries outside the system. The linker
+	# prefers a dynamic library within a directory, hence a directory that
+	# holds only the archives, searched first.
+	STATIC_DIR="${PWD}/.static-libs"
+	rm -rf "$STATIC_DIR" && mkdir "$STATIC_DIR"
+	for lib in capnp kj; do
+		if [[ -f "${PREFIX}/lib/lib${lib}.a" ]]; then
+			ln -s "${PREFIX}/lib/lib${lib}.a" "$STATIC_DIR/"
+		else
+			echo >&2 "*** warning: ‘${PREFIX}/lib/lib${lib}.a’ not found; ‘${lib}’ will be linked dynamically and the application will only run where it is installed."
+		fi
+	done
+
 	echo >> local.rave "add FLAGS    \"-I${PREFIX}/include\""
-	echo >> local.rave "add LN_FLAGS \"-L${PREFIX}/lib\""
+	echo >> local.rave "add LN_FLAGS \"-L${STATIC_DIR} -L${PREFIX}/lib\""
 fi
 
 # ========================

@@ -1,3 +1,4 @@
 build.ninja
 local.rave
+.static-libs
 Frameworks/license/src/revoked_serials.cc
