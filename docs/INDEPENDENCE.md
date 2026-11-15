@@ -106,7 +106,17 @@ Adapt and rename the manual, update the legal notices, remove `local-orig.rave`,
 | Crash reports | Own collector, or none | None |
 | Apple developer account | Subscribe, or distribute without notarization | Subscribe if public distribution is a goal |
 | Upload to the hosting account | SFTP, Git deployment, or manual upload | To be decided |
-| Signing key | On the maintainer's machine only, or also as a GitHub Actions secret | GitHub Actions secret, so that releases can be automated |
+
+## Decisions taken
+
+### Signing key (2026-11-15)
+
+Releases and the bundle index are signed by GitHub Actions, with an Ed25519 key kept as a repository secret.
+
+- **Generation.** The key is generated on the maintainer's machine with OpenSSL 3, as a PEM file: `openssl genpkey -algorithm ed25519 -out rouvre-signing.pem`. The public key is extracted with `openssl pkey -in rouvre-signing.pem -pubout` and committed to the repository; the application embeds it to verify downloads.
+- **Storage.** The private key is stored as the secret `ROUVRE_SIGNING_KEY` of a GitHub environment named `release`, restricted to the `main` branch, so that only workflows running on `main` can read it. A copy is kept offline by the maintainer. It never enters the repository, an issue, a log or a chat.
+- **Consequence.** Whoever controls the GitHub account or the `main` branch can publish signed releases. Two-factor authentication on the account and branch protection on `main` are part of the setup.
+- **Loss or compromise.** A lost key stops new releases from verifying in installed copies; a leaked key lets someone else sign them. Either case requires a new key and a release that ships the new public key, signed with the old one when it is still available. The procedure is documented when the release workflow is written.
 
 ## Order of work
 
