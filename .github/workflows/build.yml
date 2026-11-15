@@ -69,12 +69,12 @@ jobs:
           echo '### Build diagnostics'
           echo
           echo "Failed edges: $(grep -c '^FAILED:' build.log || true)"
-          echo "Errors: $(grep -cE '(error|fatal error):' build.log || true)"
+          echo "Errors: $(grep -cE ': (fatal )?error: ' build.log || true)"
           echo "Warnings: $(grep -c 'warning:' build.log || true)"
           echo
           echo '#### Errors'
           echo '```'
-          grep -E '(error|fatal error):' build.log | sed -E "$strip" | sort | uniq -c | sort -rn | head -200
+          grep -E ': (fatal )?error: ' build.log | sed -E "$strip" | sort | uniq -c | sort -rn | head -200
           echo '```'
           echo '#### Warnings by flag'
           echo '```'
