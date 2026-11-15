@@ -14,8 +14,9 @@ mirror   Download every archive listed in the upstream index into
          server sends one, and write DIR/index.plist: the upstream index
          with each download URL pointing to ASSET_BASE/<file>, the SHA-256
          digest and the upstream URL of every archive, and the upstream
-         signing keys removed. With --key, also write DIR/index.plist.sig,
-         the raw Ed25519 signature of index.plist.
+         signing keys removed, and DIR/index.html, a page listing each bundle
+         with its archive. With --key, also write DIR/index.plist.sig, the raw
+         Ed25519 signature of index.plist.
 
          With --previous, archives whose bundle and update date are already
          in that Rouvre index are not downloaded again: their entry is
@@ -309,6 +310,118 @@ def human(size):
 		size /= 1024
 
 
+# ========
+# = Page =
+# ========
+
+PAGE = """<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bundles · Rouvre</title>
+<meta name="description" content="Bundles available to Rouvre: name, category, archive and source of each bundle in the signed index.">
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<style>
+:root{{--bg:#F0F9F8;--fg:#1E3A5F;--mute:#52667f;--acc:#0D9488;--card:#fff;--line:#9FD3CF}}
+*{{box-sizing:border-box}}
+body{{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}}
+header,main,footer{{max-width:1200px;margin:0 auto;padding:0 16px}}
+header{{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:24px}}
+header a{{color:var(--fg);text-decoration:none;font-weight:700;letter-spacing:.06em}}
+h1{{font-size:clamp(1.8rem,5vw,2.6rem);margin:32px 0 8px;letter-spacing:-.02em}}
+p{{color:var(--mute);margin:0 0 12px;max-width:760px}}
+a{{color:var(--acc)}}
+.tools{{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:20px 0}}
+input{{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:999px;min-width:min(320px,100%);background:var(--card);color:var(--fg)}}
+.count{{color:var(--mute);font-size:.9rem}}
+.wrap{{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}}
+table{{border-collapse:collapse;width:100%;font-size:.92rem}}
+th,td{{text-align:left;padding:8px 12px;border-bottom:1px solid #e3f1ef;vertical-align:top}}
+th{{position:sticky;top:0;background:var(--card);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);cursor:pointer;white-space:nowrap}}
+td.num,th.num{{text-align:right;white-space:nowrap}}
+td.file{{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;white-space:nowrap}}
+td.desc{{color:var(--mute);min-width:240px}}
+tr.default td:first-child::after{{content:" ★";color:var(--acc)}}
+footer{{padding:24px 16px 48px;color:var(--mute);font-size:.85rem}}
+.lang{{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}}
+.lang button{{border:0;background:none;color:var(--mute);font:inherit;font-size:13px;padding:3px 10px;cursor:pointer}}
+.lang button[aria-pressed=true]{{background:var(--acc);color:#fff}}
+</style>
+</head>
+<body>
+<header>
+  <a href="../">ROUVRE</a>
+  <span class="lang" role="group" aria-label="Language"><button type="button" data-l="en">EN</button><button type="button" data-l="fr">FR</button></span>
+</header>
+<main>
+  <h1>Bundles</h1>
+  <p data-fr="Correspondance entre chaque bundle et son archive dans le miroir de Rouvre. Ce tableau est généré avec l'index signé ; c'est l'index, vérifié par Rouvre avec la clé de publication, qui fait foi.">Correspondence between each bundle and its archive in the Rouvre mirror. This table is generated with the signed index; the index, which Rouvre checks with the release key, is the reference.</p>
+  <p><a href="index.plist">index.plist</a> · <a href="index.plist.sig">index.plist.sig</a> · <a href="../release-signing-key.pem" data-fr="clé publique">public key</a> · <span data-fr="mis à jour le">updated</span> {created}</p>
+  <div class="tools">
+    <input type="search" id="q" placeholder="Filter" data-ph-fr="Filtrer" aria-label="Filter">
+    <span class="count"><span id="n">{count}</span> / {count} · ★ <span data-fr="installé par défaut">installed by default</span></span>
+  </div>
+  <div class="wrap">
+  <table id="t">
+    <thead><tr>
+      <th data-fr="Bundle">Bundle</th><th data-fr="Catégorie">Category</th><th data-fr="Description">Description</th>
+      <th data-fr="Archive">Archive</th><th class="num" data-fr="Taille">Size</th><th class="num" data-fr="Mise à jour">Updated</th><th data-fr="Source">Source</th>
+    </tr></thead>
+    <tbody>
+{rows}
+    </tbody>
+  </table>
+  </div>
+</main>
+<footer><span data-fr="Chaque bundle conserve la licence de ses auteurs. Pour demander le retrait d'un bundle, ouvrez un ticket sur">Each bundle keeps the license of its authors. To ask for a bundle to be removed, open an issue on</span> <a href="https://github.com/complexus-lab/rouvre/issues">github.com/complexus-lab/rouvre</a>.</footer>
+<script>
+const T=[...document.querySelectorAll('[data-fr]')];T.forEach(e=>e.dataset.en=e.innerHTML);
+const q=document.getElementById('q');q.dataset.phEn=q.placeholder;
+function setLang(l){{T.forEach(e=>e.innerHTML=l=='fr'?e.dataset.fr:e.dataset.en);q.placeholder=l=='fr'?q.dataset.phFr:q.dataset.phEn;document.documentElement.lang=l;
+document.querySelectorAll('.lang button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.l==l));try{{localStorage.lang=l}}catch(e){{}}}}
+document.querySelectorAll('.lang button').forEach(b=>b.onclick=()=>setLang(b.dataset.l));
+let sl;try{{sl=localStorage.lang}}catch(e){{}}setLang(sl||'fr');
+const rows=[...document.querySelectorAll('#t tbody tr')];
+q.oninput=()=>{{const v=q.value.toLowerCase();let n=0;rows.forEach(r=>{{const s=r.textContent.toLowerCase().includes(v);r.hidden=!s;n+=s}});document.getElementById('n').textContent=n}};
+document.querySelectorAll('#t th').forEach((th,i)=>th.onclick=()=>{{const d=th.dataset.d=th.dataset.d=='a'?'d':'a';
+rows.sort((a,b)=>{{const x=a.cells[i].dataset.k??a.cells[i].textContent,y=b.cells[i].dataset.k??b.cells[i].textContent;const c=isNaN(x)||isNaN(y)?x.localeCompare(y):x-y;return d=='a'?c:-c}}).forEach(r=>r.parentNode.appendChild(r))}});
+</script>
+</body>
+</html>
+"""
+
+
+def write_page(index, path):
+	from html import escape
+
+	def link(url, text):
+		if url and re.match(r"https?://", url):
+			return '<a href="%s">%s</a>' % (escape(url, quote=True), escape(text))
+		return escape(text)
+
+	rows = []
+	for b in sorted(index["bundles"], key=lambda b: str(b.get("name", "")).lower()):
+		v = latest_version(b) or {}
+		url = v.get("url", "")
+		name = str(b.get("name", "?"))
+		updated = str(v.get("upstreamUpdated") or v.get("updated") or "")[:10]
+		size = int(v.get("size", 0) or 0)
+		default = str(b.get("isDefault", "")).lower() in ("1", "true", "yes")
+		rows.append("      <tr%s><td>%s</td><td>%s</td><td class=\"desc\">%s</td><td class=\"file\">%s</td><td class=\"num\" data-k=\"%d\">%s</td><td class=\"num\">%s</td><td>%s</td></tr>" % (
+			' class="default"' if default else "",
+			link(b.get("html_url"), name),
+			escape(str(b.get("category", ""))),
+			escape(str(b.get("description", ""))),
+			link(url, url.rsplit("/", 1)[-1]),
+			size, human(size),
+			escape(updated),
+			link(v.get("upstreamURL"), "upstream") if v.get("upstreamURL") else "",
+		))
+	with open(path, "w", encoding="utf-8") as f:
+		f.write(PAGE.format(rows="\n".join(rows), count=len(rows), created=escape(index.get("mirror", {}).get("created", "").replace("T", " ").replace("Z", " UTC"))))
+
+
 # ============
 # = Commands =
 # ============
@@ -413,6 +526,7 @@ def mirror(args):
 		plistlib.dump(result, f, sort_keys=True)
 	if args.key:
 		sign(path, args.key)
+	write_page(result, os.path.join(args.out, "index.html"))
 
 	summary([
 		"### Bundle mirror",
