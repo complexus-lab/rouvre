@@ -1018,8 +1018,9 @@ module Target
           name:        'RunTest',
           in:          executable,
           out:         passed,
-          command:     '$in && touch $out',
-          description: 'Test ‘${in}’…',
+          command:      'bin/run_test $in $out',
+          description:  'Test ‘${in}’…',
+          dependencies: [ 'bin/run_test' ],
         }
 
         rules << {
