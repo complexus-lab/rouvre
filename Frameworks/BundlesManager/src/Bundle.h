@@ -14,6 +14,7 @@
 @property (nonatomic) NSURL*                        downloadURL;
 @property (nonatomic) NSDate*                       downloadLastUpdated;
 @property (nonatomic) NSInteger                     downloadSize;
+@property (nonatomic) NSString*                     downloadSHA256; // Lowercase hexadecimal, from the signed index
 @property (nonatomic, getter = isMandatory)   BOOL  mandatory;
 @property (nonatomic, getter = isRecommended) BOOL  recommended;
 @property (nonatomic) NSArray<BundleGrammar*>*      grammars;

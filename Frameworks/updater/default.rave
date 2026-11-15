@@ -1,5 +1,5 @@
 target "${dirname}" {
-	require text io network plist
+	require text io network plist signing
 	headers src/updater.h
 	sources src/*.cc
 }
