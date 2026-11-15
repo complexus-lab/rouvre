@@ -27,7 +27,8 @@ else
 	done
 
 	for lib in capnp kj; do
-		test -f "${PREFIX}/lib/lib${lib}."* || error "*** dependency missing: ‘${PREFIX}/lib/lib${lib}.*’. Install dependency or rerun with PREFIX set to the right location."
+		set -- "${PREFIX}/lib/lib${lib}."*
+		test -f "$1" || error "*** dependency missing: ‘${PREFIX}/lib/lib${lib}.*’. Install dependency or rerun with PREFIX set to the right location."
 	done
 
 	echo >> local.rave "add FLAGS    \"-I${PREFIX}/include\""
