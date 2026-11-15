@@ -54,19 +54,22 @@ Waiting for phase 2, because the bundle index is needed at build time and at run
 
 ### Phase 2 — Hosting on complexuslab.fr
 
-The site is served by Hostinger behind its CDN, so everything is published as static files.
+The site is the repository [complexus-lab/complexus-lab-site](https://github.com/complexus-lab/complexus-lab-site). A push to its `main` branch packs the repository into an archive and deploys it to Hostinger, replacing the whole website root. Two consequences:
 
-| Path | Content |
-|---|---|
-| `/rouvre/` | Presentation and download page |
-| `/rouvre/releases/` | Release manifest, archives, detached signatures |
-| `/rouvre/bundles/` | Bundle index, archives, detached signatures |
-| `/rouvre/manual/` | Online manual |
+- Every file served under `/rouvre/` has to live in that repository. A file uploaded by another route would disappear at the next deployment of the site.
+- Large files do not belong there. Release archives are published on GitHub Releases of this repository; the site holds the small signed files that point to them.
 
-- **Signatures.** The current scheme signs with DSA and SHA-1 through a deprecated system API and carries the signature in HTTP response headers, which a CDN may alter. Replace it with Ed25519 signatures stored as detached files next to each download. The private key stays out of the repository.
+| Path | Content | Origin |
+|---|---|---|
+| `/rouvre/` | Presentation page | Site repository |
+| `/rouvre/release-signing-key.pem` | Public signing key | Copy of `keys/release-signing.pub.pem` |
+| `/rouvre/releases/` | Release manifest and its detached signature | Written by the release workflow of this repository |
+| `/rouvre/bundles/` | Bundle index and its detached signature | Written by the bundle index workflow |
+| `/rouvre/manual/` | Online manual | Generated from the help book |
+
+- **Signatures.** The current scheme signs with DSA and SHA-1 through a deprecated system API and carries the signature in HTTP response headers, which a CDN may alter. Replace it with Ed25519 signatures stored as detached `.sig` files next to each signed file, and verify archives against a SHA-256 digest listed in the signed manifest.
 - **Software update.** Point it at the release manifest on complexuslab.fr.
-- **Publishing.** A GitHub Actions workflow builds, signs and uploads the files.
-- **Mirror.** Publish each release on GitHub Releases as well, so that the hosting provider is not a single point of failure.
+- **Publishing.** A workflow of this repository builds and signs the release, publishes the archive on GitHub Releases, then commits the manifest and its signature to the site repository, whose own workflow deploys them. Writing to the site repository needs a token with access to that repository only, stored next to the signing key in the `release` environment.
 - **Crash reports.** Do not rebuild a collector. Crash reports contain paths and user names, which are personal data, and would need server-side processing. Reports go through the issue tracker.
 
 ### Phase 3 — Supply chain
@@ -105,7 +108,6 @@ Adapt and rename the manual, update the legal notices, remove `local-orig.rave`,
 | Bundles | Full mirror, selection with a clear license, or own index pointing to the original archives | Own index pointing to the original archives, then a mirror of the clearly licensed selection |
 | Crash reports | Own collector, or none | None |
 | Apple developer account | Subscribe, or distribute without notarization | Subscribe if public distribution is a goal |
-| Upload to the hosting account | SFTP, Git deployment, or manual upload | To be decided |
 
 ## Decisions taken
 
@@ -113,11 +115,12 @@ Adapt and rename the manual, update the legal notices, remove `local-orig.rave`,
 
 Releases and the bundle index are signed by GitHub Actions, with an Ed25519 key kept as a repository secret.
 
-- **Generation.** The key is generated on the maintainer's machine with OpenSSL 3, as a PEM file: `openssl genpkey -algorithm ed25519 -out rouvre-signing.pem`. The public key is extracted with `openssl pkey -in rouvre-signing.pem -pubout` and committed to the repository; the application embeds it to verify downloads.
+- **Generation.** The key is generated on the maintainer's machine with OpenSSL 3, as a PEM file: `openssl genpkey -algorithm ed25519 -out rouvre-signing.pem`. The public key is extracted with `openssl pkey -in rouvre-signing.pem -pubout`.
+- **Public key.** Committed as [`keys/release-signing.pub.pem`](../keys/release-signing.pub.pem). SHA-256 of its DER encoding: `695c39099ec072b9acc83a113cf80b107b7590dca84672593e79431d8bc5e9df`. The application embeds it to verify downloads.
 - **Storage.** The private key is stored as the secret `ROUVRE_SIGNING_KEY` of a GitHub environment named `release`, restricted to the `main` branch, so that only workflows running on `main` can read it. A copy is kept offline by the maintainer. It never enters the repository, an issue, a log or a chat.
 - **Consequence.** Whoever controls the GitHub account or the `main` branch can publish signed releases. Two-factor authentication on the account and branch protection on `main` are part of the setup.
 - **Loss or compromise.** A lost key stops new releases from verifying in installed copies; a leaked key lets someone else sign them. Either case requires a new key and a release that ships the new public key, signed with the old one when it is still available. The procedure is documented when the release workflow is written.
 
 ## Order of work
 
-Phases 1 and 2 carry most of the value: they remove every dependency at run time. Phase 3 secures the build. Phase 1 depends on none of the open decisions. Phase 2 needs the upload method and the signing key decision.
+Phases 1 and 2 carry most of the value: they remove every dependency at run time. Phase 3 secures the build. Phase 1 depends on none of the open decisions. Phase 2 needs the choice of bundle source.
