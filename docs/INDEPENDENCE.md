@@ -35,7 +35,7 @@ Already done: the application name, bundle identifier, icon and data folder; sof
 
 The unit tests build and run on CI. Every later phase changes code those tests cover.
 
-### Phase 1 — Cut the network ties (partly done)
+### Phase 1 — Cut the network ties (done)
 
 Goal: no request from Rouvre goes to `textmate.org` or `macromates.com`.
 
@@ -46,13 +46,16 @@ Done:
 - The bundle server is a build setting (`BUNDLE_SERVER` in `default.rave`).
 - CI fails when an executable of the bundle names an upstream host other than the bundle server.
 
-Waiting for phase 2, because the bundle index is needed at build time and at run time and Rouvre does not publish one yet:
+Completed with phase 2, once the mirror was published:
 
-- Point `BUNDLE_SERVER` at complexuslab.fr.
-- Remove the upstream public keys.
-- Drop the exception for the bundle server from the CI check.
+- `BUNDLE_SERVER` points at `https://complexuslab.fr/rouvre`.
+- The upstream public keys and the code that checked their signatures are removed.
+- The CI check has no exception left.
 
-### Phase 2 — Hosting on complexuslab.fr
+### Phase 2 — Hosting on complexuslab.fr (bundles done, releases to do)
+
+Done for bundles: the mirror is published, and the application and the build tool read only the Rouvre index. The index is verified with Ed25519 against the key embedded in `Frameworks/signing` (Monocypher, vendored under `vendor/Monocypher`), and each archive against its SHA-256 digest. Software update still has to move to the same scheme.
+
 
 The site is the repository [complexus-lab/complexus-lab-site](https://github.com/complexus-lab/complexus-lab-site). A push to its `main` branch packs the repository into an archive and deploys it to Hostinger, replacing the whole website root. Two consequences:
 
