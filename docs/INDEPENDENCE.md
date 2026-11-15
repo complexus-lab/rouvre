@@ -123,6 +123,7 @@ Releases and the bundle index are signed by GitHub Actions, with an Ed25519 key 
 
 Rouvre mirrors every bundle listed in the upstream index, so that installing and updating bundles depends on no upstream server.
 
+- **File names.** Each archive is named after its bundle so that a person can find it, followed by the first block of its UUID and the date of the upstream update, for example `Markdown-5A9D4FE0-20190312.tbz`.
 - **Storage.** Bundle archives are attached to GitHub Releases of the `complexus-lab` organisation, not stored in the site repository, whose whole content is deployed at each change. The index on complexuslab.fr lists each archive with its URL and SHA-256 digest and is signed with the release key.
 - **Refresh.** The workflow `.github/workflows/bundles.yml` runs `bin/mirror_bundles` every Monday. It downloads the archives that changed since the published index, checks each against the upstream signature, attaches them to the `bundles` release of this repository, and commits the new signed index to the site repository. When an upstream archive disappears, the mirrored version stays available. Pull requests that touch the mirror only measure the upstream index.
 - **Secrets.** The `release` environment holds `ROUVRE_SIGNING_KEY` and one credential with write access to the site repository only: `SITE_DEPLOY_KEY`, an SSH deploy key, or `SITE_TOKEN`, a fine-grained personal access token limited to that repository with read and write access to its contents.

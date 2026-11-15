@@ -38,6 +38,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import unicodedata
 
 UPSTREAM = "https://api.textmate.org/bundles"
 # The bundle server answers 500 to user agents that do not follow the form
@@ -274,10 +275,23 @@ def latest_version(bundle):
 	return versions[0] if versions and isinstance(versions[0], dict) else None
 
 
+LIGATURES = str.maketrans({"Æ": "AE", "æ": "ae", "Œ": "OE", "œ": "oe", "Ø": "O", "ø": "o", "ß": "ss", "Ł": "L", "ł": "l", "Đ": "D", "đ": "d", "Þ": "Th", "þ": "th"})
+
+
 def asset_name(bundle, version):
-	"""A stable file name that changes when the bundle is updated."""
-	stamp = re.sub(r"[^0-9A-Za-z]+", "", str(version.get("updated", "")))[:14] or "0"
-	return "%s-%s.tbz" % (bundle["uuid"].upper(), stamp)
+	"""A file name a person can read, unique and changing with each update.
+
+	Name of the bundle in ASCII, then the first block of its UUID (two bundles
+	can share a name), then the date of the upstream update, for example
+	Markdown-5A9D4FE0-20190312.tbz. Only letters, digits and hyphens are
+	used, so GitHub keeps the name as is.
+	"""
+	name = str(bundle.get("name") or "Bundle").translate(LIGATURES)
+	name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
+	name = re.sub(r"[^0-9A-Za-z]+", "-", name).strip("-")[:40].strip("-") or "Bundle"
+	block = bundle["uuid"].split("-")[0].upper()
+	stamp = re.sub(r"[^0-9]+", "", str(version.get("updated", "")))[:8] or "0"
+	return "%s-%s-%s.tbz" % (name, block, stamp)
 
 
 def summary(lines):
@@ -360,7 +374,8 @@ def mirror(args):
 
 		entry = dict(bundle)
 		key = (bundle["uuid"], version.get("updated"))
-		if key in previous:
+		name = asset_name(bundle, version)
+		if key in previous and previous[key].get("url", "").rsplit("/", 1)[-1] == name:
 			entry["versions"] = [dict(previous[key])]
 			reused += 1
 		else:
@@ -370,7 +385,6 @@ def mirror(args):
 			except Exception as e:
 				failed.append((bundle.get("name", "?"), str(e)))
 				continue
-			name = asset_name(bundle, version)
 			with open(os.path.join(archives, name), "wb") as f:
 				f.write(blob)
 			mirrored = dict(version)
