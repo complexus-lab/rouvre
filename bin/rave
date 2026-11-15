@@ -949,6 +949,91 @@ module Target
     target[:build][:executable]
   end
 
+  # Build and run the unit tests listed by a target’s ‘tests’ directive.
+  #
+  # bin/gen_test merges the test files into one source with a main(), which
+  # is compiled like the target’s own sources and linked with the objects of
+  # the target and everything it requires. Running the executable from the
+  # source root touches a stamp file; ‘«target»/test’ names that stamp.
+  def tests(archs, targets)
+    archs.each do |_, target|
+      next if target[:build].include?(:tests)
+
+      passed, rules = nil, []
+
+      if (sources = target[:tests]) && !sources.empty?
+        name   = target[:name]
+        dir    = File.join(target[:builddir], '_Test', name)
+        ext    = sources.any? { |file| file.end_with?('.mm') } ? 'mm' : 'cc'
+        source = File.join(dir, "test_#{name}.#{ext}")
+
+        rules << {
+          name:         'GenTest',
+          in:           sources.sort,
+          out:          source,
+          command:      'bin/gen_test $in > $out~ && mv $out~ $out',
+          description:  'Generate test ‘${out}’…',
+          dependencies: [ 'bin/gen_test' ],
+        }
+
+        required = required_targets(target, targets, include_self: true).map { |archs| archs[target[:arch]] }.reject { |e| e.nil? }
+        objects  = required.flat_map { |other| objects(other, targets) }
+
+        include_dirs = required_targets(target, targets, include_self: true, include_weak: true).map { |archs| include_dir(archs) }.reject { |e| e.nil? }.sort.uniq
+        config = target[:variables].merge(prelude: target[:prelude], inference: target[:inference], include: include_dirs)
+
+        if links = Compiler.transform(source, config, target[:builddir])
+          objects << links.last[:out]
+          rules += links
+        end
+
+        frameworks = required.flat_map { |other| other[:frameworks] }.reject { |e| e.nil? }.sort.uniq
+        libraries  = required.flat_map { |other| other[:libraries]  }.reject { |e| e.nil? }.sort.uniq
+        static, libraries = libraries.partition { |lib| lib =~ /\.a$/ }
+
+        deps, ln_flags = [], []
+        required.each do |other|
+          ln_flags += other[:variables]['LN_FLAGS'].split(' ') if other[:variables].include?('LN_FLAGS')
+          deps += other.dig(:inference, 'LN_FLAGS') || []
+        end
+        ln_flags = [ ln_flags.uniq.join(' ') ]
+        ln_flags += frameworks.map { |e| "-framework #{e.shellescape}" }
+        ln_flags += libraries.map { |e| "-l#{e.shellescape}" }
+        ln_flags += static
+
+        executable = File.join(dir, "test_#{name}")
+        passed     = File.join(dir, "test_#{name}.passed")
+
+        rules << {
+          name:         'Link',
+          in:           objects.sort.uniq,
+          out:          executable,
+          flags:        ln_flags.join(' '),
+          command:      'xcrun --sdk macosx clang -o $out $flags $in',
+          description:  'Link ‘${out}’…',
+          dependencies: deps.uniq.sort,
+        }
+
+        rules << {
+          name:        'RunTest',
+          in:          executable,
+          out:         passed,
+          command:     '$in && touch $out',
+          description: 'Test ‘${in}’…',
+        }
+
+        rules << {
+          name: 'phony',
+          in:   passed,
+          out:  target[:identifier] + '/test',
+        }
+      end
+
+      target[:build][:rules] += rules
+      target[:build][:tests]  = passed
+    end
+  end
+
   def lipo(archs, targets)
     target = archs.values.first
 
@@ -1492,6 +1577,25 @@ if __FILE__ == $PROGRAM_NAME
     Target.runner(archs, targets)
     Target.signature(archs, targets)
     Target.defines(archs, targets)
+    Target.tests(archs, targets)
+  end
+
+  # ‘tests/«config»’ runs the tests of every target built with that config.
+  tests_by_config = Hash.new { |hash, key| hash[key] = [] }
+  targets.each do |_, archs|
+    archs.each do |_, target|
+      if passed = target[:build][:tests]
+        tests_by_config[target[:variables]['config']] << passed
+      end
+    end
+  end
+
+  tests_by_config.each do |config, stamps|
+    targets.values.first.values.first[:build][:rules] << {
+      name: 'phony',
+      in:   stamps.sort.uniq,
+      out:  config ? "tests/#{config}" : 'tests',
+    }
   end
 
   rules = targets.flat_map do |_, archs|

@@ -75,6 +75,17 @@ ninja Rouvre/run  # Build, sign, and (re)launch the application
 
 The application is signed ad hoc (`CS_IDENTITY` is `-` in `default.rave`). Set `CS_IDENTITY` in `local.rave` to sign with your own Developer ID.
 
+### Tests
+
+Targets list their unit tests with a `tests` directive in their `default.rave`. The test files of a target are merged by `bin/gen_test` into one executable, which is linked with the target and run from the source root.
+
+```sh
+ninja tests        # Build and run the tests of every target
+ninja buffer/test  # Build and run the tests of one target
+```
+
+The `cxx_tests` directives (interactive GUI tests based on CxxTest) are not wired into the build.
+
 To clean everything run:
 
 ```sh

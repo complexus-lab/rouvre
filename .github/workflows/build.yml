@@ -82,6 +82,35 @@ jobs:
         retention-days: 14
         compression-level: 0
 
+    # Unit tests of every target that declares a ‘tests’ directive. -k 0 runs
+    # them all so one run reports every failing target.
+    - name: Test
+      run: |
+        set -o pipefail
+        ninja -k 0 tests 2>&1 | tee test.log
+
+    - name: Test summary
+      if: always()
+      run: |
+        test -f test.log || exit 0
+        {
+          echo '### Unit tests'
+          echo
+          echo "Failed edges: $(grep -c '^FAILED:' test.log || true)"
+          echo
+          echo '```'
+          grep -E '^FAILED:|: (fatal )?error: |tests? failed:|^Undefined symbols|ld: ' test.log | sed -E 's#/Users/runner/(work/rouvre/rouvre|build/rouvre)/##g' | cut -c1-300 | head -150
+          echo '```'
+        } | tee -a "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload test log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-log
+        path: test.log
+        if-no-files-found: ignore
+
     - name: Diagnostics summary
       if: always()
       run: |
