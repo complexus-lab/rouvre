@@ -99,11 +99,25 @@ jobs:
         print(f"{len(index['bundles'])} archives reachable")
         EOF
 
+    - name: Check the site credentials
+      env:
+        HAS_KEY: ${{ secrets.SITE_DEPLOY_KEY != '' }}
+        HAS_TOKEN: ${{ secrets.SITE_TOKEN != '' }}
+      run: |
+        if [ "$HAS_KEY" != true ] && [ "$HAS_TOKEN" != true ]; then
+          echo "::error::The release environment needs SITE_DEPLOY_KEY or SITE_TOKEN to publish to the site repository"
+          exit 1
+        fi
+
     - name: Check out the site
       uses: actions/checkout@v4
+      # Write access to the site repository comes from either an SSH deploy
+      # key (SITE_DEPLOY_KEY) or a fine-grained token limited to that
+      # repository (SITE_TOKEN), whichever the release environment holds.
       with:
         repository: complexus-lab/complexus-lab-site
         ssh-key: ${{ secrets.SITE_DEPLOY_KEY }}
+        token: ${{ secrets.SITE_TOKEN || github.token }}
         path: site
 
     - name: Publish the index
