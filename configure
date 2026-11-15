@@ -31,6 +31,19 @@ else
 		test -f "$1" || error "*** dependency missing: ‘${PREFIX}/lib/lib${lib}.*’. Install dependency or rerun with PREFIX set to the right location."
 	done
 
+	# GNU libiconv is linked statically in place of the system library: the
+	# iconv shipped with current macOS transliterates differently (for
+	# example when saving as ASCII//TRANSLIT), so text conversion would depend
+	# on the OS version. Homebrew keeps it out of its main prefix.
+	if [[ -z "$ICONV_PREFIX" ]]; then
+		if [[ -f "${PREFIX}/opt/libiconv/lib/libiconv.a" ]]; then ICONV_PREFIX="${PREFIX}/opt/libiconv"
+		else ICONV_PREFIX="$PREFIX"
+		fi
+	fi
+
+	test -f "${ICONV_PREFIX}/lib/libiconv.a" || error "*** dependency missing: ‘${ICONV_PREFIX}/lib/libiconv.a’ (GNU libiconv). Install dependency or rerun with ICONV_PREFIX set to the right location."
+	grep -qs libiconv_open "${ICONV_PREFIX}/include/iconv.h" || error "*** ‘${ICONV_PREFIX}/include/iconv.h’ is not the GNU libiconv header. Install GNU libiconv or rerun with ICONV_PREFIX set to the right location."
+
 	# Link capnp and kj statically when archives are available, so the built
 	# application does not depend on libraries outside the system. The linker
 	# prefers a dynamic library within a directory, hence a directory that
@@ -45,7 +58,13 @@ else
 		fi
 	done
 
-	echo >> local.rave "add FLAGS    \"-I${PREFIX}/include\""
+	ln -s "${ICONV_PREFIX}/lib/libiconv.a" "$STATIC_DIR/"
+
+	# The GNU iconv.h must be found before the one in the SDK.
+	if [[ "$ICONV_PREFIX" == "$PREFIX" ]];
+		then echo >> local.rave "add FLAGS    \"-I${PREFIX}/include\""
+		else echo >> local.rave "add FLAGS    \"-I${ICONV_PREFIX}/include -I${PREFIX}/include\""
+	fi
 	echo >> local.rave "add LN_FLAGS \"-L${STATIC_DIR} -L${PREFIX}/lib\""
 fi
 

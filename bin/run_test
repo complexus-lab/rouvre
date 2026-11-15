@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+# Run one test executable and touch a stamp file when it passes.
+#
+# Usage: bin/run_test <executable> <stamp>
+#
+# A test that produces no result within TEST_TIMEOUT seconds (default 300) is
+# sampled, so the log shows where it is stuck, and then killed. A test that
+# dies from a signal is run again under lldb to print a backtrace. Both are
+# reported as failures.
+require 'fileutils'
+require 'tempfile'
+
+def wait_for(pid, seconds)
+  deadline = Time.now + seconds
+  loop do
+    _, status = Process.wait2(pid, Process::WNOHANG)
+    return status if status
+    return nil if Time.now > deadline
+    sleep 0.1
+  end
+end
+
+def kill(pid)
+  Process.kill('KILL', pid)
+  Process.wait(pid)
+rescue Errno::ESRCH, Errno::ECHILD
+end
+
+def tool(name)
+  path = `xcrun --find #{name} 2>/dev/null`.chomp
+  path.empty? ? nil : path
+rescue Errno::ENOENT
+  nil
+end
+
+abort "Usage: #{File.basename($PROGRAM_NAME)} <executable> <stamp>" unless ARGV.size == 2
+
+executable, stamp = ARGV
+timeout = (ENV['TEST_TIMEOUT'] || 300).to_i
+name    = File.basename(executable)
+
+pid    = Process.spawn(executable)
+status = wait_for(pid, timeout)
+
+if status.nil?
+  STDERR.puts "#{name}: no result after #{timeout} seconds"
+  if File.executable?('/usr/bin/sample')
+    Tempfile.create('sample') do |file|
+      system('/usr/bin/sample', pid.to_s, '2', '-file', file.path, out: File::NULL, err: File::NULL)
+      STDERR.puts File.read(file.path)
+    end
+  end
+  kill(pid)
+  exit 1
+end
+
+if status.signaled?
+  STDERR.puts "#{name}: terminated by signal #{status.termsig} (#{Signal.signame(status.termsig)})"
+  if lldb = tool('lldb')
+    STDERR.puts "#{name}: running again under lldb for a backtrace"
+    debugger = Process.spawn(lldb, '--batch', '-o', 'run', '-k', 'bt', '-k', 'quit', '--', executable, in: File::NULL, err: [ :child, :out ], out: STDERR)
+    kill(debugger) if wait_for(debugger, 120).nil?
+  end
+  exit 1
+end
+
+exit status.exitstatus unless status.success?
+
+FileUtils.touch(stamp)

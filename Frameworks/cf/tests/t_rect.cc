@@ -40,6 +40,9 @@ static CGRect from_str (std::string const& s)
 			}
 		}
 	}
+	// No cell set: x1 - x0 would wrap around as an unsigned subtraction.
+	if(x1 <= x0 || y1 <= y0)
+		return CGRectZero;
 	return CGRectMake(x0, y0, x1 - x0, y1 - y0);
 }
 
