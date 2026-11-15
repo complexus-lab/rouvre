@@ -129,6 +129,30 @@ static pid_t run_command (dispatch_group_t rootGroup, std::string const& cmd, in
 	return pid;
 }
 
+// A run loop without sources or timers returns from CFRunLoopRun…() at once,
+// which turns the wait loops of runner_t into busy loops. On a GCD worker
+// thread these also keep the pool from starting the blocks that read the
+// command’s output, so the command never completes. A timer that never fires
+// makes the run loop sleep until it is woken up.
+struct keep_run_loop_waiting_t
+{
+	keep_run_loop_waiting_t () : _run_loop(CFRunLoopGetCurrent())
+	{
+		_timer = CFRunLoopTimerCreateWithHandler(kCFAllocatorDefault, CFAbsoluteTimeGetCurrent() + 1.0e10, 0, 0, 0, ^(CFRunLoopTimerRef){ });
+		CFRunLoopAddTimer(_run_loop, _timer, kCFRunLoopCommonModes);
+	}
+
+	~keep_run_loop_waiting_t ()
+	{
+		CFRunLoopRemoveTimer(_run_loop, _timer, kCFRunLoopCommonModes);
+		CFRelease(_timer);
+	}
+
+private:
+	CFRunLoopRef _run_loop;
+	CFRunLoopTimerRef _timer;
+};
+
 namespace command
 {
 	void fix_shebang (std::string* command)
@@ -224,6 +248,8 @@ namespace command
 
 	void runner_t::wait ()
 	{
+		keep_run_loop_waiting_t keepWaiting;
+
 		NSMutableArray* queuedEvents = [NSMutableArray array];
 		while(_process_id != -1 && !_did_detach)
 		{
@@ -266,6 +292,8 @@ namespace command
 
 		if(_did_detach)
 		{
+			keep_run_loop_waiting_t keepWaiting;
+
 			__block bool shouldWait = true;
 			CFRunLoopRef runLoop = CFRunLoopGetCurrent();
 
