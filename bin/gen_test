@@ -2,6 +2,9 @@
 require 'pathname'
 require 'erb'
 
+# Test files contain UTF-8; do not depend on the locale ninja was started with.
+Encoding.default_external = Encoding::UTF_8
+
 user_code = ""
 setup, tests, benchmarks = [ ], [ ], [ ]
 

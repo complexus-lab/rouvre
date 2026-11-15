@@ -33,6 +33,10 @@ jobs:
     - name: Dependencies
       run: brew install boost capnp google-sparsehash multimarkdown ninja ragel
 
+    # The scm tests exercise the Mercurial and Subversion drivers.
+    - name: Test dependencies
+      run: brew install mercurial subversion
+
     - name: Configure
       run: ./configure && cat local.rave
 
@@ -99,7 +103,7 @@ jobs:
           echo "Failed edges: $(grep -c '^FAILED:' test.log || true)"
           echo
           echo '```'
-          grep -E '^FAILED:|: (fatal )?error: |tests? failed:|^Undefined symbols|ld: ' test.log | sed -E 's#/Users/runner/(work/rouvre/rouvre|build/rouvre)/##g' | cut -c1-300 | head -150
+          grep -A12 -E '^FAILED:|: (fatal )?error: |^Undefined symbols' test.log | grep -v '^ld: warning' | sed -E 's#/Users/runner/(work/rouvre/rouvre|build/rouvre)/##g' | cut -c1-300 | head -150
           echo '```'
         } | tee -a "$GITHUB_STEP_SUMMARY"
 
