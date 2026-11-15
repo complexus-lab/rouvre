@@ -1,18 +1,69 @@
 name: CI
 
-on: [push]
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: macOS-latest
+    runs-on: macos-15
+    timeout-minutes: 60
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
-    - name: Setup
+
+    - name: Toolchain
+      run: |
+        sw_vers
+        xcodebuild -version
+        clang --version
+        uname -m
+
+    - name: Dependencies
       run: brew install boost capnp google-sparsehash multimarkdown ninja ragel
+
+    # ./configure only knows /usr/local; Homebrew lives in /opt/homebrew on
+    # Apple Silicon. An existing local.rave makes ./configure skip its own
+    # path probing.
     - name: Configure
-      run: ./configure
+      run: |
+        prefix="$(brew --prefix)"
+        printf 'add FLAGS    "-I%s/include"\nadd LN_FLAGS "-L%s/lib"\n' "$prefix" "$prefix" > local.rave
+        ./configure
+
+    # -k 0 keeps going after failures so one run reports every broken file.
     - name: Build
-      run: ninja TextMate
+      run: |
+        set -o pipefail
+        ninja -k 0 TextMate 2>&1 | tee build.log
+
+    - name: Error summary
+      if: always()
+      run: |
+        {
+          echo '### Build errors'
+          echo
+          echo "Failed edges: $(grep -c '^FAILED:' build.log || true)"
+          echo
+          echo '```'
+          grep -E '(error|fatal error):' build.log | sed -E 's/^.*\/(Frameworks|Applications|PlugIns|vendor|Shared)\//\1\//' | sort | uniq -c | sort -rn | head -200
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload build log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log
+        path: build.log
