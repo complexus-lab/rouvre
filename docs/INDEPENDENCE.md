@@ -76,7 +76,6 @@ The site is the repository [complexus-lab/complexus-lab-site](https://github.com
 
 - Mirror the submodules under the `complexus-lab` organisation, or point them at their original projects where those exist (Onigmo is maintained by its author).
 - Replace the document icons with a set of Rouvre's own.
-- Settle the source of the bundles (see the open decisions).
 
 ### Phase 4 — Names and interfaces, with a compatibility layer
 
@@ -105,7 +104,6 @@ Adapt and rename the manual, update the legal notices, remove `local-orig.rave`,
 | Subject | Options | Recommendation |
 |---|---|---|
 | Bundle interface (`TM_*`, `mate`, `txmt://`) | Keep as aliases, or remove | Keep as aliases |
-| Bundles | Full mirror, selection with a clear license, or own index pointing to the original archives | Own index pointing to the original archives, then a mirror of the clearly licensed selection |
 | Crash reports | Own collector, or none | None |
 | Apple developer account | Subscribe, or distribute without notarization | Subscribe if public distribution is a goal |
 
@@ -121,6 +119,15 @@ Releases and the bundle index are signed by GitHub Actions, with an Ed25519 key 
 - **Consequence.** Whoever controls the GitHub account or the `main` branch can publish signed releases. Two-factor authentication on the account and branch protection on `main` are part of the setup.
 - **Loss or compromise.** A lost key stops new releases from verifying in installed copies; a leaked key lets someone else sign them. Either case requires a new key and a release that ships the new public key, signed with the old one when it is still available. The procedure is documented when the release workflow is written.
 
+### Bundles: full mirror (2026-11-15)
+
+Rouvre mirrors every bundle listed in the upstream index, so that installing and updating bundles depends on no upstream server.
+
+- **Storage.** Bundle archives are attached to GitHub Releases of the `complexus-lab` organisation, not stored in the site repository, whose whole content is deployed at each change. The index on complexuslab.fr lists each archive with its URL and SHA-256 digest and is signed with the release key.
+- **Refresh.** A scheduled workflow fetches the upstream index and bundle repositories, rebuilds the archives that changed, and publishes a new signed index. When an upstream source disappears, the mirrored version stays available.
+- **Licenses.** Many bundle repositories carry no explicit license. Redistributing them makes Complexus Lab their distributor. The mirror keeps each bundle's license file when there is one, records the source repository and commit of every archive in the index, and removes a bundle at the request of its authors. This is a known legal exposure, accepted by the maintainer.
+- **Size.** The total size of the mirror is not known yet; it is measured on the first run, before any upload.
+
 ## Order of work
 
-Phases 1 and 2 carry most of the value: they remove every dependency at run time. Phase 3 secures the build. Phase 1 depends on none of the open decisions. Phase 2 needs the choice of bundle source.
+Phases 1 and 2 carry most of the value: they remove every dependency at run time. Phase 3 secures the build. Phase 1 depends on none of the open decisions. Phase 2 has no open decision left.
