@@ -1,0 +1,7 @@
+target "${dirname}" {
+	headers     src/monocypher.h src/optional/monocypher-ed25519.h
+
+	add FLAGS   "-I${dir}/src -I${dir}/src/optional"
+
+	sources     src/monocypher.c src/optional/monocypher-ed25519.c
+}
