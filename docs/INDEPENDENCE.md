@@ -127,7 +127,7 @@ Rouvre mirrors every bundle listed in the upstream index, so that installing and
 - **Refresh.** The workflow `.github/workflows/bundles.yml` runs `bin/mirror_bundles` every Monday. It downloads the archives that changed since the published index, checks each against the upstream signature, attaches them to the `bundles` release of this repository, and commits the new signed index to the site repository. When an upstream archive disappears, the mirrored version stays available. Pull requests that touch the mirror only measure the upstream index.
 - **Secrets.** The `release` environment holds `ROUVRE_SIGNING_KEY` and one credential with write access to the site repository only: `SITE_DEPLOY_KEY`, an SSH deploy key, or `SITE_TOKEN`, a fine-grained personal access token limited to that repository with read and write access to its contents.
 - **Licenses.** Many bundle repositories carry no explicit license. Redistributing them makes Complexus Lab their distributor. The mirror keeps each bundle's license file when there is one, records the source repository and commit of every archive in the index, and removes a bundle at the request of its authors. This is a known legal exposure, accepted by the maintainer.
-- **Size.** The total size of the mirror is not known yet; it is measured on the first run, before any upload.
+- **Size.** Measured on 2026-11-15: the upstream index lists 255 bundles, 29 of them default bundles, for 26.5 MB of archives. The largest is 4 MB. The index is an XML property list of 282 KB, signed by the upstream server.
 
 ## Order of work
 
