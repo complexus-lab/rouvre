@@ -188,7 +188,43 @@ namespace oak
 			basic_tree_t* _tree;
 		};
 
-		typedef std::reverse_iterator<iterator> reverse_iterator;
+		// std::reverse_iterator dereferences a temporary copy of its base, and our
+		// iterator returns a reference to a value_type stored in the iterator
+		// itself, so that reference would dangle. This adaptor keeps the iterator
+		// for the element it refers to alive for as long as the adaptor lives.
+		struct reverse_iterator : std::iterator<std::bidirectional_iterator_tag, value_type>
+		{
+			explicit reverse_iterator (iterator const& base) : _base(base), _current(base) { }
+
+			iterator base () const { return _base; }
+
+			bool operator== (reverse_iterator const& rhs) const { return _base == rhs._base; }
+			bool operator!= (reverse_iterator const& rhs) const { return _base != rhs._base; }
+
+			value_type& operator*  () { sync(); return *_current;  }
+			value_type* operator-> () { sync(); return &*_current; }
+
+			reverse_iterator& operator++ ()    { --_base; _synced = false; return *this; }
+			reverse_iterator& operator-- ()    { ++_base; _synced = false; return *this; }
+			reverse_iterator operator++ (int)  { reverse_iterator tmp(*this); ++(*this); return tmp; }
+			reverse_iterator operator-- (int)  { reverse_iterator tmp(*this); --(*this); return tmp; }
+
+		private:
+			void sync ()
+			{
+				if(!_synced)
+				{
+					_current = _base;
+					--_current;
+					_synced = true;
+				}
+			}
+
+			iterator _base;
+			iterator _current;
+			bool _synced = false;
+		};
+
 
 		iterator begin ()                    { node_t* res = _root; while(!res->_left->is_null()) res = res->_left; return iterator(res, this); }
 		iterator end ()                      { return iterator(node_t::null_ptr(), this); }
