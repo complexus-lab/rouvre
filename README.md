@@ -11,8 +11,8 @@ This is work in progress. There are no binary releases. Rouvre requires macOS 15
 | Area | State |
 |---|---|
 | Source | Upstream commit `346b52b` (12 October 2021) plus the changes in this repository |
-| Build | Compiles, links and signs on macOS 15 with Apple Silicon (arm64 only); the resulting application has not yet been launched or tested |
-| Tests | Not runnable: the build generator does not yet emit rules for the `tests` directives |
+| Build | Compiles, links and signs on macOS 15 with Apple Silicon (arm64 only). The application starts on macOS 27; it has not been tested beyond launch |
+| Tests | The unit tests of 24 targets build and pass on CI. The interactive GUI tests (`cxx_tests`) are not wired into the build |
 | Naming | The application is `Rouvre.app` with the identifier `fr.complexuslab.Rouvre`. Names that bundles and scripts depend on are kept: the `mate` command, the `TM_*` variables, the `TextMate` JavaScript object and the `com.macromates.textmate.*` file types. Settings, bundles and session data live in `~/Library/Application Support/Rouvre`, separate from a TextMate installation |
 | Online services | Software update and crash reporting are switched off. The bundle index is still fetched from the upstream server, which this fork does not operate |
 
@@ -111,6 +111,7 @@ Every pull request and every push to `main` is built on a GitHub-hosted `macos-1
 
  * [INTERNALS.md](INTERNALS.md) describes the core data structures and the layering of the code.
  * [CONTRIBUTING.md](CONTRIBUTING.md) describes how to submit changes.
+ * [docs/INDEPENDENCE.md](docs/INDEPENDENCE.md) records the plan to separate from upstream infrastructure and host Rouvre's own services.
  * The user manual shipped with the application is in `Applications/TextMate/resources/TextMate Help`.
 
 ## Legal
