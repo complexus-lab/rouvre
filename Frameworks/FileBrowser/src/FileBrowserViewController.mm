@@ -328,12 +328,12 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 			if(repository)
 			{
 				alert.messageText     = [NSString stringWithFormat:@"Version control is disabled for “%@”.", self.fileItem.localizedName];
-				alert.informativeText = @"For performance reasons TextMate will not monitor version control information for this folder.";
+				alert.informativeText = @"For performance reasons Rouvre will not monitor version control information for this folder.";
 			}
 			else
 			{
 				alert.messageText     = [NSString stringWithFormat:@"Version control is not available for “%@”.", self.fileItem.localizedName];
-				alert.informativeText = @"You need to initialize the folder using your favorite version control system before TextMate can show you status.";
+				alert.informativeText = @"You need to initialize the folder using your favorite version control system before Rouvre can show you status.";
 			}
 
 			[alert addButtonWithTitle:@"OK"];

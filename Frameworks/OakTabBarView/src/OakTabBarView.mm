@@ -23,7 +23,7 @@ static void DisableImplicitAnimationForBlock (void(^handler)())
 // = OakTabItem =
 // ==============
 
-static NSString* const OakTabItemPasteboardType = @"com.macromates.TextMate.tabItem";
+static NSString* const OakTabItemPasteboardType = @"fr.complexuslab.Rouvre.tabItem";
 
 @class OakTabView;
 

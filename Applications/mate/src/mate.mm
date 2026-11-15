@@ -56,10 +56,10 @@ static NSURL* find_app ()
 {
 	disable_sudo_helper_t helper;
 
-	if(NSURL* url = [NSWorkspace.sharedWorkspace URLForApplicationWithBundleIdentifier:@"com.macromates.TextMate"])
+	if(NSURL* url = [NSWorkspace.sharedWorkspace URLForApplicationWithBundleIdentifier:@"fr.complexuslab.Rouvre"])
 		return url;
 
-	fprintf(stderr, "Can’t find TextMate.app\n");
+	fprintf(stderr, "Can’t find Rouvre.app\n");
 	exit(EX_UNAVAILABLE);
 }
 
@@ -70,7 +70,7 @@ static void launch_app (bool disableUntitled)
 	NSError* error;
 	if(![NSWorkspace.sharedWorkspace launchApplicationAtURL:find_app() options:NSWorkspaceLaunchWithoutActivation|NSWorkspaceLaunchWithoutAddingToRecents configuration:(disableUntitled ? @{ NSWorkspaceLaunchConfigurationArguments: @[ @"-disableNewDocumentAtStartup", @"1" ] } : nil) error:&error])
 	{
-		fprintf(stderr, "Can’t launch TextMate.app: %s\n", error.localizedDescription.UTF8String);
+		fprintf(stderr, "Can’t launch Rouvre.app: %s\n", error.localizedDescription.UTF8String);
 		exit(EX_UNAVAILABLE);
 	}
 }
@@ -115,10 +115,10 @@ static void usage (FILE* io)
 		"       %1$s -c<mark> [-l<line>] [-u<identifier> | file ...]\n"
 		"\n"
 		"Options:\n"
-		" -w, --[no-]wait                 Wait for file to be closed by TextMate.\n"
+		" -w, --[no-]wait                 Wait for file to be closed by Rouvre.\n"
 		" -l, --line <selection>          Setup <selection> after loading file.\n"
 		" -t, --type <filetype>           Treat file as having <filetype>.\n"
-		" -m, --name <name>               The display name shown in TextMate.\n"
+		" -m, --name <name>               The display name shown in Rouvre.\n"
 		" -r, --[no-]recent               Add file to Open Recent menu.\n"
 		" -u, --uuid <identifier>         Reference already open document with\n"
 		"                                 <identifier>.\n"

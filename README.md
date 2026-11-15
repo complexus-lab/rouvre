@@ -1,27 +1,30 @@
-# TextMate
+# Rouvre
 
-## Download
+Rouvre is a [Complexus Lab](https://complexuslab.fr) project: an independent fork of the TextMate 2 source code, a text editor for macOS. Upstream development stopped in October 2021. This fork exists to make the code build and run again on current macOS releases and on Apple Silicon.
 
-You can [download TextMate from here](https://macromates.com/download).
+Rouvre is maintained at <https://github.com/thierrysays/rouvre>. It has no affiliation with the original publisher or author, who neither endorse nor support it. Questions about this fork belong in this repository.
+
+## Status
+
+This is work in progress. There are no binary releases.
+
+| Area | State |
+|---|---|
+| Source | Upstream commit `346b52b` (12 October 2021) plus the changes in this repository |
+| Build | Compiles, links and signs on macOS 15 with Apple Silicon (arm64 only); the resulting application has not yet been launched or tested |
+| Tests | Not runnable: the build generator does not yet emit rules for the `tests` directives |
+| Naming | The application is `Rouvre.app` with the identifier `fr.complexuslab.Rouvre`. Names that bundles and scripts depend on are kept: the `mate` command, the `TM_*` variables, the `TextMate` JavaScript object and the `com.macromates.textmate.*` file types. Settings, bundles and session data live in `~/Library/Application Support/Rouvre`, separate from a TextMate installation |
+| Online services | Software update and crash reporting are switched off. The bundle index is still fetched from the upstream server, which this fork does not operate |
 
 ## Feedback
 
-You can use [the TextMate mailing list](https://lists.macromates.com/listinfo/textmate) or [#textmate][] IRC channel on [freenode.net][] for questions, comments, and bug reports.
+Use the [issue tracker](https://github.com/thierrysays/rouvre/issues) for bug reports and questions.
 
-You can also [contact MacroMates](https://macromates.com/support).
+## Building
 
-Before you submit a bug report please read the [writing bug reports](https://github.com/textmate/textmate/wiki/writing-bug-reports) instructions.
+### Requirements
 
-## Screenshot
-
-![textmate](https://raw.github.com/textmate/textmate/gh-pages/images/screenshot.png)
-
-# Building
-
-## Setup
-
-To build TextMate, you need the following:
-
+ * macOS with Xcode and its command line tools
  * [boost][]            — portable C++ source libraries
  * [Cap’n Proto][capnp] — serialization library
  * [multimarkdown][]    — marked-up plain text compiler
@@ -29,7 +32,7 @@ To build TextMate, you need the following:
  * [ragel][]            — state machine compiler
  * [sparsehash][]       — a cache friendly `hash_map`
 
-All this can be installed using either [Homebrew][] or [MacPorts][]:
+All of these can be installed with either [Homebrew][] or [MacPorts][]:
 
 ```sh
 # Homebrew
@@ -39,36 +42,38 @@ brew install boost capnp google-sparsehash multimarkdown ninja ragel
 sudo port install boost capnproto multimarkdown ninja ragel sparsehash
 ```
 
-After installing dependencies, make sure you have a full checkout (including submodules) and then run `./configure` followed by `ninja`, for example:
+### Build
+
+Clone with submodules, then run `./configure` followed by `ninja`:
 
 ```sh
-git clone --recursive https://github.com/textmate/textmate.git
-cd textmate
-./configure && ninja TextMate/run
+git clone --recursive https://github.com/thierrysays/rouvre.git
+cd rouvre
+./configure && ninja Rouvre/run
 ```
 
-The `./configure` script simply checks that all dependencies can be found, and then calls `bin/rave` to bootstrap a `build.ninja` file with default config set to `release` and default target set to `TextMate`.
+`./configure` checks that the dependencies can be found and calls `bin/rave` to generate `build.ninja`, with the default config set to `release` and the default target set to `Rouvre`.
 
-## Building from within TextMate
-
-You should install the [Ninja][NinjaBundle] bundle which can be installed via _Preferences_ → _Bundles_.
-
-After this you can press ⌘B to build from within TextMate. In case you haven't already you also need to set up the `PATH` variable either in _Preferences_ → _Variables_ or `~/.tm_properties` so it can find `ninja` and related tools; an example could be `$PATH:/usr/local/bin`.
-
-The default target (set in `.tm_properties`) is `TextMate/run`. This will relaunch TextMate but when called from within TextMate, a dialog will appear before the current instance is killed. As there is full session restore, it is safe to relaunch even with unsaved changes.
-
-If the current file is a test file then the target to build is changed to build the library to which the test belongs (this is done by setting `TM_NINJA_TARGET` in the `.tm_properties` file found in the root of the source tree).
-
-Similarly, if the current file belongs to an application target (other than `TextMate.app`) then `TM_NINJA_TARGET` is set to build and run this application.
-
-## Build Targets
-
-For the `TextMate.app` application there are two symbolic build targets:
+The dependency location is detected in this order: the `PREFIX` environment variable, `brew --prefix`, `/opt/local` (MacPorts), `/usr/local`. To force a location:
 
 ```sh
-ninja TextMate      # Build and sign TextMate
-ninja TextMate/run  # Build, sign, and (re)launch TextMate
+PREFIX=/some/prefix ./configure
 ```
+
+Cap’n Proto is linked statically when its archives (`libcapnp.a`, `libkj.a`) are present, through a `.static-libs` directory created by `./configure`, so that the application runs on machines where the library is not installed.
+
+The detected paths are written to `local.rave`. Delete that file to run the detection again; if it exists, `./configure` leaves it untouched.
+
+Build output goes to `~/build/rouvre` unless the `builddir` environment variable names an existing directory.
+
+### Build targets
+
+```sh
+ninja Rouvre      # Build and sign the application
+ninja Rouvre/run  # Build, sign, and (re)launch the application
+```
+
+The application is signed ad hoc (`CS_IDENTITY` is `-` in `default.rave`). Set `CS_IDENTITY` in `local.rave` to sign with your own Developer ID.
 
 To clean everything run:
 
@@ -76,22 +81,38 @@ To clean everything run:
 ninja -t clean
 ```
 
-Or simply delete `~/build/TextMate`.
+Or delete the build directory.
 
-# Legal
+### Building from within the editor
 
-The source for TextMate is released under the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+Install the [Ninja][NinjaBundle] bundle, then press ⌘B. Set the `PATH` variable in _Preferences_ → _Variables_ or in `~/.tm_properties` so that `ninja` and the other tools are found, for example `$PATH:/opt/homebrew/bin`.
 
-TextMate is a trademark of Allan Odgaard.
+The default target, set in `.tm_properties`, is `Rouvre/run`. If the current file belongs to another application target, `TM_NINJA_TARGET` builds and runs that application instead.
 
-[boost]:         http://www.boost.org/
+### Continuous integration
+
+Every pull request and every push to `main` is built on a GitHub-hosted `macos-15` runner. The build continues past the first failure; the complete log is attached to the run as the `build-log` artifact and the job summary counts the errors per message.
+
+## Documentation
+
+ * [INTERNALS.md](INTERNALS.md) describes the core data structures and the layering of the code.
+ * [CONTRIBUTING.md](CONTRIBUTING.md) describes how to submit changes.
+ * The user manual shipped with the application is in `Applications/TextMate/resources/TextMate Help`.
+
+## Legal
+
+The source is released under the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See [COPYING](COPYING) and [LICENSE](LICENSE).
+
+The code inherited from upstream is copyright MacroMates Ltd. and the upstream contributors; the complete authorship is preserved in the git history. Changes made in this repository are copyright Thierry Sayegh-Sauvage (Complexus Lab) and their respective authors, and are released under the same license. The license requires the inherited copyright notices to stay in place.
+
+“TextMate” is a trademark of its owner, who has no connection with this fork. The name appears here only to state where the code comes from.
+
+[boost]:         https://www.boost.org/
 [ninja]:         https://ninja-build.org/
-[multimarkdown]: http://fletcherpenney.net/multimarkdown/
-[ragel]:         http://www.complang.org/ragel/
-[capnp]:         https://github.com/capnproto/capnproto.git
-[MacPorts]:      http://www.macports.org/
-[Homebrew]:      http://brew.sh/
+[multimarkdown]: https://fletcherpenney.net/multimarkdown/
+[ragel]:         https://www.colm.net/open-source/ragel/
+[capnp]:         https://capnproto.org/
+[sparsehash]:    https://github.com/sparsehash/sparsehash
+[Homebrew]:      https://brew.sh/
+[MacPorts]:      https://www.macports.org/
 [NinjaBundle]:   https://github.com/textmate/ninja.tmbundle
-[sparsehash]:    https://code.google.com/p/sparsehash/
-[#textmate]:     irc://irc.freenode.net/#textmate
-[freenode.net]:  http://freenode.net/

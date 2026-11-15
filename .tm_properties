@@ -7,7 +7,7 @@ excludeDirectoriesInFileChooser  = '{bin/CxxTest,build,SyntaxMate.tmBundle}'
 excludeDirectoriesInFolderSearch = '{bin/CxxTest,build,SyntaxMate.tmBundle}'
 
 # Variables
-TM_ORGANIZATION_NAME = 'MacroMates'
+TM_ORGANIZATION_NAME = 'Complexus Lab'
 
 TM_TODO_IGNORE       = '/(build|CxxTest|PlugIns|vendor)/|\.(md|html)$'
 TM_BUILD_DIR         = '${builddir:-$HOME/build/${CWD/.*\///}}'
@@ -17,9 +17,9 @@ TM_CXX_FLAGS         = '$TM_CXX_FLAGS    -I"$CWD/Shared/include" ${TM_FRAMEWORK_
 TM_OBJCXX_FLAGS      = '$TM_OBJCXX_FLAGS -I"$CWD/Shared/include" ${TM_FRAMEWORK_INCLUDE}'
 
 TM_NINJA_FILE        = '${CWD}/build.ninja'
-TM_NINJA_TARGET      = 'TextMate/run'
+TM_NINJA_TARGET      = 'Rouvre/run'
 
-TM_ISSUE_URL         = 'https://github.com/textmate/textmate/issues/%s'
+TM_ISSUE_URL         = 'https://github.com/thierrysays/rouvre/issues/%s'
 
 [ 'source.c++, source.objc++' ]
 tabSize          = 3

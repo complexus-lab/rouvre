@@ -62,7 +62,7 @@ static NSString* SafeBasename (NSString* name)
 {
 	if(self = [super init])
 	{
-		_installDirectory = [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"TextMate/Managed"];
+		_installDirectory = [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"Rouvre/Managed"];
 		_localIndexPath   = [_installDirectory stringByAppendingPathComponent:@"LocalIndex.plist"];
 		_remoteIndexPath  = [_installDirectory stringByAppendingPathComponent:@"Cache/org.textmate.updates.default"];
 		_remoteIndexURL   = [NSURL URLWithString:@REST_API "/bundles"];
@@ -463,7 +463,7 @@ namespace
 	{
 		for(NSString* dir in @[ @"", @"Pristine Copy" ])
 		{
-			NSString* textMateFolder = [NSString pathWithComponents:@[ path, @"TextMate", dir ]];
+			NSString* textMateFolder = [NSString pathWithComponents:@[ path, @"Rouvre", dir ]];
 			NSString* avianFolder    = [NSString pathWithComponents:@[ path, @"Avian", dir ]];
 			NSString* src = [avianFolder stringByAppendingPathComponent:@"Bundles"];
 			NSString* dst = [textMateFolder stringByAppendingPathComponent:@"Bundles"];
@@ -517,11 +517,11 @@ namespace
 
 	for(auto path : bundles::locations())
 		bundlesPaths.push_back(path::join(path, "Bundles"));
-	bundlesIndexPath = path::join(path::home(), "Library/Caches/com.macromates.TextMate/BundlesIndex.binary");
+	bundlesIndexPath = path::join(path::home(), "Library/Caches/fr.complexuslab.Rouvre/BundlesIndex.binary");
 	cache.set_content_filter(&prune_dictionary);
 
 	// LEGACY bundle index used prior to 2.0-alpha.9467
-	std::string const oldPath = path::join(path::home(), "Library/Caches/com.macromates.TextMate/BundlesIndex.plist");
+	std::string const oldPath = path::join(path::home(), "Library/Caches/fr.complexuslab.Rouvre/BundlesIndex.plist");
 	if(access(oldPath.c_str(), R_OK) == 0)
 	{
 		cache.load(oldPath);

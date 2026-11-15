@@ -27,7 +27,7 @@ static void initialize (CFBundleRef generatorBundle)
 		NSBundle* parentBundle = [NSBundle bundleWithPath:parentBundlePath];
 
 		settings_t::set_default_settings_path([[parentBundle pathForResource:@"Default" ofType:@"tmProperties"] fileSystemRepresentation]);
-		settings_t::set_global_settings_path(path::join(path::home(), "Library/Application Support/TextMate/Global.tmProperties"));
+		settings_t::set_global_settings_path(path::join(path::home(), "Library/Application Support/Rouvre/Global.tmProperties"));
 
 		// Load bundle index
 		std::vector<std::string> paths;
@@ -35,7 +35,7 @@ static void initialize (CFBundleRef generatorBundle)
 			paths.push_back(path::join(path, "Bundles"));
 
 		plist::cache_t cache;
-		cache.load_capnp(path::join(path::home(), "Library/Caches/com.macromates.TextMate/BundlesIndex.binary"));
+		cache.load_capnp(path::join(path::home(), "Library/Caches/fr.complexuslab.Rouvre/BundlesIndex.binary"));
 
 		auto index = create_bundle_index(paths, cache);
 		bundles::set_index(index.first, index.second);
@@ -206,7 +206,7 @@ OSStatus TextMateQuickLookPlugIn_GeneratePreviewForURL (void* instance, QLPrevie
 	if(QLPreviewRequestIsCancelled(request))
 		return noErr;
 
-	NSUserDefaults* userDefaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.macromates.TextMate"];
+	NSUserDefaults* userDefaults = [[NSUserDefaults alloc] initWithSuiteName:@"fr.complexuslab.Rouvre"];
 	NSString* appearance = [userDefaults stringForKey:@"themeAppearance"];
 	BOOL darkMode = [appearance isEqualToString:@"dark"];
 	if(@available(macos 10.14, *))

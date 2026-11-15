@@ -175,7 +175,7 @@ static NSArray* const kObservedKeyPaths = @[ @"arrayController.arrangedObjects.p
 @implementation DocumentWindowController
 + (KVDB*)sharedProjectStateDB
 {
-	NSString* appSupport = [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"TextMate"];
+	NSString* appSupport = [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"Rouvre"];
 	return [KVDB sharedDBUsingFile:@"RecentProjects.db" inDirectory:appSupport];
 }
 
@@ -2317,12 +2317,12 @@ static NSArray* const kObservedKeyPaths = @[ @"arrayController.arrangedObjects.p
 // = Touch Bar =
 // =============
 
-static NSTouchBarItemIdentifier kTouchBarCustomizationIdentifier = @"com.macromates.TextMate.touch-bar.customization-identifier";
-static NSTouchBarItemIdentifier kTouchBarTabNavigationIdentifier = @"com.macromates.TextMate.touch-bar.tab-navigation";
-static NSTouchBarItemIdentifier kTouchBarNewTabItemIdentifier    = @"com.macromates.TextMate.touch-bar.new-tab";
-static NSTouchBarItemIdentifier kTouchBarQuickOpenItemIdentifier = @"com.macromates.TextMate.touch-bar.quick-open";
-static NSTouchBarItemIdentifier kTouchBarFindItemIdentifier      = @"com.macromates.TextMate.touch-bar.find";
-static NSTouchBarItemIdentifier kTouchBarFavoritesItemIdentifier = @"com.macromates.TextMate.touch-bar.favorites";
+static NSTouchBarItemIdentifier kTouchBarCustomizationIdentifier = @"fr.complexuslab.Rouvre.touch-bar.customization-identifier";
+static NSTouchBarItemIdentifier kTouchBarTabNavigationIdentifier = @"fr.complexuslab.Rouvre.touch-bar.tab-navigation";
+static NSTouchBarItemIdentifier kTouchBarNewTabItemIdentifier    = @"fr.complexuslab.Rouvre.touch-bar.new-tab";
+static NSTouchBarItemIdentifier kTouchBarQuickOpenItemIdentifier = @"fr.complexuslab.Rouvre.touch-bar.quick-open";
+static NSTouchBarItemIdentifier kTouchBarFindItemIdentifier      = @"fr.complexuslab.Rouvre.touch-bar.find";
+static NSTouchBarItemIdentifier kTouchBarFavoritesItemIdentifier = @"fr.complexuslab.Rouvre.touch-bar.favorites";
 
 - (NSTouchBar*)makeTouchBar
 {

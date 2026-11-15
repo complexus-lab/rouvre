@@ -124,7 +124,7 @@ static id CreateInstanceOfPlugInClass (Class cl, TMPlugInController* controller)
 {
 	NSMutableArray* paths = [NSMutableArray array];
 	for(NSString* path in NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSAllDomainsMask, YES))
-		[paths addObject:[NSString pathWithComponents:@[ path, @"TextMate", @"PlugIns" ]]];
+		[paths addObject:[NSString pathWithComponents:@[ path, @"Rouvre", @"PlugIns" ]]];
 	[paths addObject:[[NSBundle mainBundle] builtInPlugInsPath]];
 
 	for(NSString* path in paths)
@@ -142,7 +142,7 @@ static id CreateInstanceOfPlugInClass (Class cl, TMPlugInController* controller)
 	NSFileManager* fm = NSFileManager.defaultManager;
 
 	NSArray* libraryPaths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSAllDomainsMask, YES);
-	NSString* dst = [NSString pathWithComponents:@[ libraryPaths[0], @"TextMate", @"PlugIns", [src lastPathComponent] ]];
+	NSString* dst = [NSString pathWithComponents:@[ libraryPaths[0], @"Rouvre", @"PlugIns", [src lastPathComponent] ]];
 	if([src isEqualToString:dst])
 		return;
 
@@ -153,7 +153,7 @@ static id CreateInstanceOfPlugInClass (Class cl, TMPlugInController* controller)
 	{
 		NSAlert* alert        = [[NSAlert alloc] init];
 		alert.messageText     = @"Cannot Install Plug-in";
-		alert.informativeText = [NSString stringWithFormat:@"The %@ plug-in is not compatible with this version of TextMate.", plugInName];
+		alert.informativeText = [NSString stringWithFormat:@"The %@ plug-in is not compatible with this version of Rouvre.", plugInName];
 		[alert addButtonWithTitle:@"Continue"];
 		[alert runModal];
 		return;
@@ -164,7 +164,7 @@ static id CreateInstanceOfPlugInClass (Class cl, TMPlugInController* controller)
 	{
 		NSAlert* alert        = [[NSAlert alloc] init];
 		alert.messageText     = @"Cannot Install Plug-in";
-		alert.informativeText = [NSString stringWithFormat:@"The %@ plug-in should not be used with this version of TextMate because of stability problems.", plugInName];
+		alert.informativeText = [NSString stringWithFormat:@"The %@ plug-in should not be used with this version of Rouvre because of stability problems.", plugInName];
 		[alert addButtonWithTitle:@"Continue"];
 		[alert runModal];
 		return;
@@ -209,7 +209,7 @@ static id CreateInstanceOfPlugInClass (Class cl, TMPlugInController* controller)
 		{
 			NSAlert* alert        = [[NSAlert alloc] init];
 			alert.messageText     = @"Plug-in Installed";
-			alert.informativeText = [NSString stringWithFormat:@"To activate “%@” you will need to relaunch TextMate.", plugInName];
+			alert.informativeText = [NSString stringWithFormat:@"To activate “%@” you will need to relaunch Rouvre.", plugInName];
 			[alert addButtons:@"Relaunch", @"Cancel", nil];
 			if([alert runModal] == NSAlertFirstButtonReturn) // "Relaunch"
 				oak::application_t::relaunch();

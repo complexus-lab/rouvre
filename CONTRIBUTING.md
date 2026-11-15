@@ -6,12 +6,12 @@ You can send pull requests via GitHub. Patches should:
 2. One commit should do exactly one thing.
 3. Commit messages should start with a summary line below 70 characters followed by a blank line, and then the reasoning/analysis for why the change was made (if appropriate).
 4. Commits that fix a bug in a previous commit should:
-    1. If existing commit is already upstream: Start with `fixup!` and then the summary line of the commit it fixes. If you are writing your commit message in TextMate then type `fix⇥` to get the prefix and a menu allowing you to pick the summary line from one of the last 15 commits. If you commit from a terminal you can use `git commit --fixup=«commit»`
+    1. If existing commit is already upstream: Start with `fixup!` and then the summary line of the commit it fixes. If you are writing your commit message in the editor then type `fix⇥` to get the prefix and a menu allowing you to pick the summary line from one of the last 15 commits. If you commit from a terminal you can use `git commit --fixup=«commit»`
     2. If existing commit is a local commit: You should amend the existing commit! Either use `git commit --amend` or do a `fixup!` followed by `git rebase -i` (to merge in the fixup). I.e. do not send a pull request where some of the commits you want us to pull fixes bugs introduced in other commits you also want us to pull.
-5. Rebase your branch against the upstream’s master. We don’t want to pull redundant merge commits.
-6. **Be clear about what license applies to your patch:** The files within this repository are under the [GPL 3][] (or later) but (as the original creator) we are still allowed to create non-free derivatives. However, if patches are given to us under GPL then those cannot make it into any non-free derivatives we may later wish to create. So to make it easier for us (and avoid any legal issues) we prefer if patches are released as public domain.
+5. Rebase your branch against the upstream’s `main`. We don’t want to pull redundant merge commits.
+6. **License:** the files in this repository are under the [GPL 3][] (or later). By submitting a patch you agree to release it under the same license.
 
-There is the [textmate][] mailing list and [#textmate][] IRC channel at [freenode.net][] where this project can be discussed.
+This repository is a fork; “upstream” below means this repository’s `main` branch as opposed to your own fork of it. Use the [issue tracker][issues] to discuss the project.
 
 ## GitHub Workflow
 
@@ -20,9 +20,9 @@ Developing patches should follow this workflow:
 ### Initial Setup
 
 1.	Fork on GitHub (click Fork button)
-2.	Clone to computer: `git clone git@github.com:«github account»/textmate.git`
-3.	cd into your repo: `cd textmate`
-4.	Set up remote upstream: `git remote add -f upstream git://github.com/textmate/textmate.git`
+2.	Clone to computer: `git clone --recursive git@github.com:«github account»/rouvre.git`
+3.	cd into your repo: `cd rouvre`
+4.	Set up remote upstream: `git remote add -f upstream https://github.com/thierrysays/rouvre.git`
 
 ### Adding a Feature
 
@@ -41,7 +41,7 @@ Creating a branch is not strictly necessary, but it makes it easy to delete your
 If a lot of changes has happened upstream you can replay your local changes on top of these, this is done with `rebase`, e.g.:
 
 	git fetch upstream
-	git rebase upstream/master
+	git rebase upstream/main
 
 This will fetch changes and re-apply your commits on top of these.
 
@@ -49,7 +49,7 @@ This is generally better than merge, as it will give a clear picture of which co
 
 You can use `-i` with `rebase` for an “interactive” rebase. This allows you to drop, re-arrange, merge, and reword commits, e.g.:
 
-	git rebase -i upstream/master
+	git rebase -i upstream/main
 
 ## Changing a xib File
 
@@ -69,7 +69,5 @@ After this, re-apply your change and commit. If the change is non-trivial it is 
 	has been bound to the “canInstall”
 	property of File’s Owner.
 
-[GPL 3]:          http://www.gnu.org/copyleft/gpl.html
-[textmate]:       http://lists.macromates.com/listinfo/textmate
-[#textmate]:      irc://irc.freenode.net/#textmate
-[freenode.net]:   http://freenode.net/
+[GPL 3]:  https://www.gnu.org/licenses/gpl-3.0.html
+[issues]: https://github.com/thierrysays/rouvre/issues

@@ -95,9 +95,9 @@ BOOL HasDocumentWindow (NSArray* windows)
 - (NSMenu*)mainMenu
 {
 	MBMenu const items = {
-		{ @"TextMate",
+		{ @"Rouvre",
 			.submenu = {
-				{ @"About TextMate",        @selector(orderFrontAboutPanel:)               },
+				{ @"About Rouvre",          @selector(orderFrontAboutPanel:)               },
 				{ /* -------- */ },
 				{ @"Preferences…",          @selector(showPreferences:),            @","   },
 				{ @"Check for Update",      @selector(performSoftwareUpdateCheck:)         },
@@ -105,11 +105,11 @@ BOOL HasDocumentWindow (NSArray* windows)
 				{ /* -------- */ },
 				{ @"Services",              .systemMenu = MBMenuTypeServices               },
 				{ /* -------- */ },
-				{ @"Hide TextMate",         @selector(hide:),                       @"h"   },
+				{ @"Hide Rouvre",           @selector(hide:),                       @"h"   },
 				{ @"Hide Others",           @selector(hideOtherApplications:),      @"h", .modifierFlags = NSEventModifierFlagCommand|NSEventModifierFlagOption },
 				{ @"Show All",              @selector(unhideAllApplications:),             },
 				{ /* -------- */ },
-				{ @"Quit TextMate",         @selector(terminate:),                  @"q"   },
+				{ @"Quit Rouvre",           @selector(terminate:),                  @"q"   },
 			}
 		},
 		{ @"File",
@@ -408,7 +408,7 @@ BOOL HasDocumentWindow (NSArray* windows)
 		},
 		{ @"Help",
 			.systemMenu = MBMenuTypeHelp, .submenu = {
-				{ @"TextMate Help", @selector(showHelp:), @"?" },
+				{ @"Rouvre Help", @selector(showHelp:), @"?" },
 			}
 		},
 	};
@@ -487,17 +487,13 @@ BOOL HasDocumentWindow (NSArray* windows)
 	if(NSMenu* menu = [self mainMenu])
 		NSApp.mainMenu = menu;
 
-	NSOperatingSystemVersion osVersion = NSProcessInfo.processInfo.operatingSystemVersion;
-	NSString* parms = [NSString stringWithFormat:@"v=%@&os=%ld.%ld.%ld", [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet], osVersion.majorVersion, osVersion.minorVersion, osVersion.patchVersion];
 
-	SoftwareUpdate.sharedInstance.channels = @{
-		kSoftwareUpdateChannelRelease:    [NSURL URLWithString:[NSString stringWithFormat:@"" REST_API "/releases/release?%@", parms]],
-		kSoftwareUpdateChannelPrerelease: [NSURL URLWithString:[NSString stringWithFormat:@"" REST_API "/releases/beta?%@", parms]],
-		kSoftwareUpdateChannelCanary:     [NSURL URLWithString:[NSString stringWithFormat:@"" REST_API "/releases/nightly?%@", parms]],
-	};
+	// Rouvre has no release server. The upstream channels would offer the
+	// original application as an update and replace this one with it.
+	SoftwareUpdate.sharedInstance.channels = @{ };
 
 	settings_t::set_default_settings_path([[[NSBundle mainBundle] pathForResource:@"Default" ofType:@"tmProperties"] fileSystemRepresentation]);
-	settings_t::set_global_settings_path(path::join(path::home(), "Library/Application Support/TextMate/Global.tmProperties"));
+	settings_t::set_global_settings_path(path::join(path::home(), "Library/Application Support/Rouvre/Global.tmProperties"));
 
 	[NSUserDefaults.standardUserDefaults registerDefaults:@{
 		@"NSRecentDocumentsLimit": @25,
@@ -507,7 +503,7 @@ BOOL HasDocumentWindow (NSArray* windows)
 
 	[TMPlugInController.sharedInstance loadAllPlugIns:nil];
 
-	std::string dest = path::join(path::home(), "Library/Application Support/TextMate/Managed");
+	std::string dest = path::join(path::home(), "Library/Application Support/Rouvre/Managed");
 	if(!path::exists(dest))
 	{
 		if(NSString* archive = [[NSBundle mainBundle] pathForResource:@"DefaultBundles" ofType:@"tbz"])
@@ -544,7 +540,7 @@ BOOL HasDocumentWindow (NSArray* windows)
 		}
 		else
 		{
-			os_log_error(OS_LOG_DEFAULT, "No ‘DefaultBundles.tbz’ in TextMate.app");
+			os_log_error(OS_LOG_DEFAULT, "No ‘DefaultBundles.tbz’ in Rouvre.app");
 		}
 	}
 	[BundlesManager.sharedInstance loadBundlesIndex];
@@ -611,7 +607,7 @@ BOOL HasDocumentWindow (NSArray* windows)
 	[AboutWindowController showChangesIfUpdated];
 
 	[CrashReporter.sharedInstance applicationDidFinishLaunching:aNotification];
-	[CrashReporter.sharedInstance postNewCrashReportsToURLString:[NSString stringWithFormat:@"%s/crashes", REST_API]];
+	// Crash reports are not posted: the upstream collector is not ours.
 
 	[OakCommitWindowServer sharedInstance]; // Setup server
 

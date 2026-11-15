@@ -1,18 +1,111 @@
 name: CI
 
-on: [push]
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: macOS-latest
+    runs-on: macos-15
+    timeout-minutes: 60
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
-    - name: Setup
+
+    - name: Toolchain
+      run: |
+        sw_vers
+        xcodebuild -version
+        clang --version
+        uname -m
+
+    - name: Dependencies
       run: brew install boost capnp google-sparsehash multimarkdown ninja ragel
+
     - name: Configure
-      run: ./configure
+      run: ./configure && cat local.rave
+
+    # -k 0 keeps going after failures so one run reports every broken file.
     - name: Build
-      run: ninja TextMate
+      run: |
+        set -o pipefail
+        ninja -k 0 Rouvre 2>&1 | tee build.log
+
+    - name: Verify bundle
+      run: |
+        app="$HOME/build/rouvre/release/Applications/TextMate/Rouvre.app"
+        codesign --verify --deep --strict "$app"
+        lipo -archs "$app/Contents/MacOS/Rouvre"
+        test -f "$app/Contents/Resources/Rouvre.icns"
+        test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$app/Contents/Info.plist")" = Rouvre
+        /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist"
+        otool -l "$app/Contents/MacOS/Rouvre" | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX' | grep -E 'minos|version|sdk'
+
+    # The application must run on a machine without Homebrew: every Mach-O
+    # file in the bundle may only load system libraries or bundled ones.
+    - name: Verify library dependencies
+      run: |
+        app="$HOME/build/rouvre/release/Applications/TextMate/Rouvre.app"
+        bad=0
+        while IFS= read -r -d '' f; do
+          file -b "$f" | grep -q 'Mach-O' || continue
+          deps="$(otool -L "$f" | tail -n +2 | awk '{print $1}' | grep -vE '^(/usr/lib/|/System/Library/|@rpath/|@executable_path/|@loader_path/)' || true)"
+          if [ -n "$deps" ]; then
+            echo "::error::${f#$app/} loads non-system libraries:"
+            echo "$deps"
+            bad=1
+          fi
+        done < <(find "$app" -type f -print0)
+        otool -L "$app/Contents/MacOS/Rouvre"
+        exit $bad
+
+    # ditto keeps symlinks, permissions and the code signature intact.
+    - name: Package application
+      run: ditto -c -k --keepParent "$HOME/build/rouvre/release/Applications/TextMate/Rouvre.app" "$RUNNER_TEMP/Rouvre-arm64.zip"
+
+    - name: Upload application
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-arm64
+        path: ${{ runner.temp }}/Rouvre-arm64.zip
+        retention-days: 14
+        compression-level: 0
+
+    - name: Diagnostics summary
+      if: always()
+      run: |
+        strip='s/^.*\/(Frameworks|Applications|PlugIns|vendor|Shared)\//\1\//'
+        {
+          echo '### Build diagnostics'
+          echo
+          echo "Failed edges: $(grep -c '^FAILED:' build.log || true)"
+          echo "Errors: $(grep -cE ': (fatal )?error: ' build.log || true)"
+          echo "Warnings: $(grep -c 'warning:' build.log || true)"
+          echo
+          echo '#### Errors'
+          echo '```'
+          grep -E ': (fatal )?error: ' build.log | sed -E "$strip" | sort | uniq -c | sort -rn | head -200
+          echo '```'
+          echo '#### Warnings by flag'
+          echo '```'
+          grep 'warning:' build.log | grep -oE '\[-W[^]]+\]' | sort | uniq -c | sort -rn | head -50
+          echo '```'
+        } | tee -a "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload build log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log
+        path: build.log

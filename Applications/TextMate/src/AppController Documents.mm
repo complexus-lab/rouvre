@@ -196,7 +196,7 @@
 	{
 		NSAlert* alert        = [[NSAlert alloc] init];
 		alert.messageText     = @"Unknown URL Scheme";
-		alert.informativeText = [NSString stringWithFormat:@"This version of TextMate does not support “%@” in its URL scheme.", [aURL host]];
+		alert.informativeText = [NSString stringWithFormat:@"This version of Rouvre does not support “%@” in its URL scheme.", [aURL host]];
 		[alert addButtonWithTitle:@"Continue"];
 		[alert runModal];
 	}
