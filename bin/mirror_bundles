@@ -10,8 +10,8 @@ measure  Fetch the upstream index and report how many bundles it lists
          and the total size of their archives. Downloads no archive.
 
 mirror   Download every archive listed in the upstream index into
-         DIR/archives, check each against the upstream signature when the
-         server sends one, and write DIR/index.plist: the upstream index
+         DIR/archives, require a valid upstream signature on the index (from
+         a pinned key) and on each archive, and write DIR/index.plist: the upstream index
          with each download URL pointing to ASSET_BASE/<file>, the SHA-256
          digest and the upstream URL of every archive, and the upstream
          signing keys removed, and DIR/index.html, a page listing each bundle
@@ -48,6 +48,51 @@ UPSTREAM = "https://api.textmate.org/bundles"
 USER_AGENT = os.environ.get("MIRROR_USER_AGENT", "Rouvre/1.0/00000000-0000-0000-0000-000000000000 15.0.0/x86_64/RouvreBundleMirror/1")
 SIGNEE_HEADER = "x-amz-meta-x-signee"
 SIGNATURE_HEADER = "x-amz-meta-x-signature"
+
+# Public keys of the upstream project, as its editor embedded them. They are
+# the trust anchor of the mirror: the upstream index must carry a signature
+# from one of them. The keys an index lists are trusted only once that index
+# is verified, and never replace these.
+UPSTREAM_KEYS = {
+	"org.textmate.duff": """\
+-----BEGIN PUBLIC KEY-----
+MIIBtjCCASsGByqGSM44BAEwggEeAoGBAPIE9PpXPK3y2eBDJ0dnR/D8xR1TiT9m
+8DnPXYqkxwlqmjSShmJEmxYycnbliv2JpojYF4ikBUPJPuerlZfOvUBC99ERAgz7
+N1HYHfzFIxVo1oTKWurFJ1OOOsfg8AQDBDHnKpS1VnwVoDuvO05gK8jjQs9E5LcH
+e/opThzSrI7/AhUAy02E9H7EOwRyRNLofdtPxpa10o0CgYBKDfcBscidAoH4pkHR
+IOEGTCYl3G2Pd1yrblCp0nCCUEBCnvmrWVSXUTVa2/AyOZUTN9uZSC/Kq9XYgqwj
+hgzqa8h/a8yD+ao4q8WovwGeb6Iso3WlPl8waz6EAPR/nlUTnJ4jzr9t6iSH9owS
+vAmWrgeboia0CI2AH++liCDvigOBhAACgYAFWO66xFvmF2tVIB+4E7CwhrSi2uIk
+deBrpmNcZZ+AVFy1RXJelNe/cZ1aXBYskn/57xigklpkfHR6DGqpEbm6KC/47Jfy
+y5GEx+F/eBWEePi90XnLinytjmXRmS2FNqX6D15XNG1xJfjociA8bzC7s4gfeTUd
+lpQkBq2z71yitA==
+-----END PUBLIC KEY-----
+""",
+	"org.textmate.msheets": """\
+-----BEGIN PUBLIC KEY-----
+MIIDOzCCAi4GByqGSM44BAEwggIhAoIBAQDfYsqBc18uL7yYb/bDrrEtVTBG8tML
+mMtNFyU8XhlVKWdQJwBGG/fV2Wjc0hVYSeTWv3VueITZbuuVZEePXlem6Dki1DEL
+sMNeDvE/l0MKHXi1+sr1cht7QvuTi/c1UK4I6QNWDJWi7KmqJg3quLCwJfMef1x5
+/qgLUln5cU6+pAj43Vp62bzHJBjAnrC432yD7F4Mxu4oV/PEm5QC6pU7RcvUwAox
+p7m7c8+CxX7Aq4dH6Jd8Jt6XuYIktlfcFivvvF60CvxhABDBdGMra4roO0wlJmID
+91oQ3PLxFBsDmbluPJlkmTp4YetsF8/Zd9P3WwBQUArtNdiqKZIQ4uHXAhUAvNZ5
+tZkzuUiblIxZKmOCBN/JeMsCggEBAK9jUiC98+hwY5XcDQjDSLPE4uvv+dHZ29Bx
+8KevX+qzd6shIhp6urvyBXrM+h8l7iB6Jh4Wm3WhqKMBjquRqyGogQDGxJr7QBVk
+QSOiyaKDT4Ue/Nhg1MFsrt3PtS1/nscZ6GGWswrCfQ1t4m/wXDasUSfz2smae+Jd
+Z6UGBzWQMRawyU/O/LX0PlJkBOMHopecAUcxHc2G02P2QwAMKPavwksQ4tWCJvIr
+7ZELfCcVQtG2UnpTRWqLZQaVwSYMHoNK9/reu099sdv9CQ+trH2Q5LlBXJmHloFK
+afiuQPjTmaJVf/piiQ79xJB6VmwoEpOJJG4NYNt7f+I7YCk07xwDggEFAAKCAQA5
+SBwWJouMKUI6Hi0EZ4/Yh98qQmItx4uWTYFdjcUVVYCKK7GIuXu67rfkbCJUrvT9
+ID1vw2eyTmbuW2TPuRDsxUcB7WRyyLekl67vpUgMgLBLgYMXQf6RF4HM2tW7UWg7
+oNQHkZKWbhDgXdumKzKf/qZPB/LT2Yndv/zqkQ+YXIu08j0RGkxJaAjB7nEv1XGq
+L2VJf8aEi+MnihAtMPCHcW34qswqO1kOCbOWNShlfWHGjKlfdsPYv87RcalHNqps
+k1r60kyEkeZvKGM+FDT80N7cafX286v8n9L4IvvnLr/FDOH4XXzEjXB9Vr5Ffvj1
+dxNPRmDZOo6JNKA8Uvki
+-----END PUBLIC KEY-----
+""",
+}
+
+UUID = re.compile(r"[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}")
 
 
 # =========================
@@ -232,8 +277,11 @@ def fetch(url, attempts=4):
 # = Signatures =
 # ==============
 
-def upstream_keys(index):
-	return {k.get("identity"): k.get("publicKey") for k in index.get("keys", []) if isinstance(k, dict)}
+def archive_keys(index):
+	"""Keys that may sign archives: those of a verified index, then the pinned ones."""
+	keys = {k.get("identity"): k.get("publicKey") for k in index.get("keys", []) if isinstance(k, dict) and k.get("identity") and k.get("publicKey")}
+	keys.update(UPSTREAM_KEYS)
+	return keys
 
 
 def verify_upstream(data, headers, keys):
@@ -279,19 +327,21 @@ def latest_version(bundle):
 LIGATURES = str.maketrans({"Æ": "AE", "æ": "ae", "Œ": "OE", "œ": "oe", "Ø": "O", "ø": "o", "ß": "ss", "Ł": "L", "ł": "l", "Đ": "D", "đ": "d", "Þ": "Th", "þ": "th"})
 
 
-def asset_name(bundle, version):
+def asset_name(bundle, version, digits=14):
 	"""A file name a person can read, unique and changing with each update.
 
 	Name of the bundle in ASCII, then the first block of its UUID (two bundles
-	can share a name), then the date of the upstream update, for example
-	Markdown-5A9D4FE0-20190312.tbz. Only letters, digits and hyphens are
-	used, so GitHub keeps the name as is.
+	can share a name), then the date and time of the upstream update, for
+	example Markdown-5A9D4FE0-20190312101112.tbz. Only letters, digits and
+	hyphens are used, so GitHub keeps the name as is. The time keeps two
+	updates of the same day apart; archives mirrored before it was added
+	carry the date alone (digits=8).
 	"""
 	name = str(bundle.get("name") or "Bundle").translate(LIGATURES)
 	name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
 	name = re.sub(r"[^0-9A-Za-z]+", "-", name).strip("-")[:40].strip("-") or "Bundle"
 	block = bundle["uuid"].split("-")[0].upper()
-	stamp = re.sub(r"[^0-9]+", "", str(version.get("updated", "")))[:8] or "0"
+	stamp = re.sub(r"[^0-9]+", "", str(version.get("updated", "")))[:digits] or "0"
 	return "%s-%s-%s.tbz" % (name, block, stamp)
 
 
@@ -429,7 +479,7 @@ def write_page(index, path):
 def measure(args):
 	data, headers = fetch(args.upstream)
 	index, fmt = load_plist(data)
-	status = verify_upstream(data, headers, upstream_keys(index))
+	status = verify_upstream(data, headers, UPSTREAM_KEYS)
 	bundles = index.get("bundles", [])
 	sizes = [int(v.get("size", 0) or 0) for v in map(latest_version, bundles) if v]
 	no_size = sum(1 for v in map(latest_version, bundles) if not v or not v.get("size"))
@@ -458,10 +508,11 @@ def measure(args):
 def mirror(args):
 	data, headers = fetch(args.upstream)
 	index, fmt = load_plist(data)
-	keys = upstream_keys(index)
-	status = verify_upstream(data, headers, keys)
-	if status == "unknown signee":
-		raise RuntimeError("the upstream index is signed by an unknown key")
+	# The index must be signed by a pinned key; nothing it says counts before that.
+	status = verify_upstream(data, headers, UPSTREAM_KEYS)
+	if status != "verified":
+		raise RuntimeError("the upstream index is not signed by a pinned upstream key (%s)" % status)
+	keys = archive_keys(index)
 
 	previous = {}
 	if args.previous:
@@ -469,7 +520,8 @@ def mirror(args):
 			prev_data, _ = fetch(args.previous)
 			for b in load_plist(prev_data)[0].get("bundles", []):
 				v = latest_version(b)
-				if v and v.get("sha256"):
+				# Entries mirrored without a verified upstream signature are fetched again.
+				if v and v.get("sha256") and v.get("upstreamSignature") == "verified":
 					previous[(b.get("uuid"), v.get("upstreamUpdated", v.get("updated")))] = v
 		except RuntimeError as e:
 			if "HTTP 404" not in str(e):
@@ -484,17 +536,22 @@ def mirror(args):
 		if not version or not bundle.get("uuid") or not version.get("url"):
 			failed.append((bundle.get("name", "?"), "no download URL"))
 			continue
+		if not UUID.fullmatch(str(bundle["uuid"])):
+			failed.append((bundle.get("name", "?"), "malformed UUID %r" % bundle["uuid"]))
+			continue
 
 		entry = dict(bundle)
 		key = (bundle["uuid"], version.get("updated"))
 		name = asset_name(bundle, version)
-		if key in previous and previous[key].get("url", "").rsplit("/", 1)[-1] == name:
+		if key in previous and previous[key].get("url", "").rsplit("/", 1)[-1] in (name, asset_name(bundle, version, 8)):
 			entry["versions"] = [dict(previous[key])]
 			reused += 1
 		else:
 			try:
 				blob, blob_headers = fetch(version["url"])
 				blob_status = verify_upstream(blob, blob_headers, keys)
+				if blob_status != "verified":
+					raise RuntimeError("archive not signed by a known upstream key (%s)" % blob_status)
 			except Exception as e:
 				failed.append((bundle.get("name", "?"), str(e)))
 				continue

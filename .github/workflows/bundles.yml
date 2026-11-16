@@ -77,8 +77,18 @@ jobs:
         shopt -s nullglob
         files=(mirror/archives/*.tbz)
         echo "${#files[@]} new archives"
-        # Archive names change with each bundle update, so existing assets are never replaced.
-        for f in "${files[@]}"; do gh release upload bundles "$f"; done
+        # A run that failed after this step leaves archives the published index
+        # does not list yet; the next run downloads them again. An asset already
+        # there with the same digest is kept, any other is replaced.
+        gh release view bundles --json assets > "$RUNNER_TEMP/assets.json"
+        for f in "${files[@]}"; do
+          existing="$(jq -r --arg n "$(basename "$f")" '.assets[] | select(.name == $n) | .digest // ""' "$RUNNER_TEMP/assets.json")"
+          if [ "$existing" = "sha256:$(sha256sum "$f" | cut -d' ' -f1)" ]; then
+            echo "$(basename "$f") already uploaded"
+          else
+            gh release upload bundles "$f" --clobber
+          fi
+        done
 
     - name: Check the published URLs
       run: |
