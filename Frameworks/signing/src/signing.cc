@@ -24,6 +24,30 @@ namespace signing
 		return verify(data.data(), data.size(), signature.data(), signature.size(), publicKey);
 	}
 
+	// =============
+	// = Freshness =
+	// =============
+
+	static bool is_timestamp (std::string const& str)
+	{
+		static char const kPattern[] = "dddd-dd-ddTdd:dd:ddZ";
+		if(str.size() != sizeof(kPattern) - 1)
+			return false;
+		for(size_t i = 0; i < str.size(); ++i)
+		{
+			if(kPattern[i] == 'd' ? (str[i] < '0' || str[i] > '9') : str[i] != kPattern[i])
+				return false;
+		}
+		return true;
+	}
+
+	bool supersedes (std::string const& candidate, std::string const& current)
+	{
+		if(!is_timestamp(current))
+			return true;
+		return is_timestamp(candidate) && candidate >= current; // Fixed width: text order is time order
+	}
+
 	// ===========
 	// = SHA-256 =
 	// ===========

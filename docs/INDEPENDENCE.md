@@ -54,7 +54,7 @@ Completed with phase 2, once the mirror was published:
 
 ### Phase 2 — Hosting on complexuslab.fr (bundles done, releases to do)
 
-Done for bundles: the mirror is published, and the application and the build tool read only the Rouvre index. The index is verified with Ed25519 against the key embedded in `Frameworks/signing` (Monocypher, vendored under `vendor/Monocypher`), and each archive against its SHA-256 digest. Software update still has to move to the same scheme.
+Done for bundles: the mirror is published, and the application and the build tool read only the Rouvre index. The index is verified with Ed25519 against the key embedded in `Frameworks/signing` (Monocypher, vendored under `vendor/Monocypher`), and each archive against its SHA-256 digest. A signature never expires, so an installed copy also refuses an index created before the one it already holds (`mirror.created`); a first installation has nothing to compare with, and no index expires. Software update still has to move to the same scheme.
 
 
 The site is the repository [complexus-lab/complexus-lab-site](https://github.com/complexus-lab/complexus-lab-site). A push to its `main` branch packs the repository into an archive and deploys it to Hostinger, replacing the whole website root. Two consequences:

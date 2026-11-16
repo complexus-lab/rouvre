@@ -574,6 +574,8 @@ def mirror(args):
 	result["bundles"] = out_bundles
 	result["mirror"] = {
 		"source":  args.upstream,
+		# Installed copies refuse an index created before the one they hold
+		# (signing::supersedes); they compare this text, so its form is fixed.
 		"created": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
 		"note":    "Mirror of the bundle index published by the upstream project. Each archive is kept as published there; licenses are those of each bundle.",
 	}

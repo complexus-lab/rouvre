@@ -9,6 +9,23 @@ static NSString* const OakHTTPHeaderSignature = @"x-amz-meta-x-signature";
 - (BOOL)data:(NSData*)contentData hasValidBase64EncodedSignature:(NSString*)encodedSignature usingPublicKeyString:(NSString*)publicKeyString;
 @end
 
+// Creation time a signed property list records (mirror.created), or the empty string.
+static std::string CreationTime (NSData* data)
+{
+	if(data)
+	{
+		id plist = [NSPropertyListSerialization propertyListWithData:data options:NSPropertyListImmutable format:nullptr error:nullptr];
+		if([plist isKindOfClass:[NSDictionary class]])
+		{
+			id mirror = plist[@"mirror"];
+			id created = [mirror isKindOfClass:[NSDictionary class]] ? mirror[@"created"] : nil;
+			if([created isKindOfClass:[NSString class]])
+				return [created UTF8String] ?: "";
+		}
+	}
+	return "";
+}
+
 static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 {
 	char buf[1024];
@@ -451,6 +468,12 @@ static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 				if(!signing::verify(data.bytes, data.length, signature.bytes, signature.length))
 				{
 					error = [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"Unable to verify signature." }];
+				}
+				else if(!signing::supersedes(CreationTime(data), CreationTime([NSData dataWithContentsOfURL:localFileURL])))
+				{
+					// A valid signature does not make the file the latest one.
+					os_log_error(OS_LOG_DEFAULT, "Refusing %{public}@: older than the file in use", serverURL);
+					error = [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"The server sent an older file than the one in use." }];
 				}
 				else if([data writeToURL:localFileURL options:NSDataWritingAtomic error:&error])
 				{

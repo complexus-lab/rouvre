@@ -74,6 +74,25 @@ void test_release_key_matches_repository ()
 	OAK_ASSERT(der.substr(12) == std::string((char const*)signing::kReleasePublicKey, 32));
 }
 
+void test_supersedes ()
+{
+	std::string const older = "2026-11-09T04:17:02Z", newer = "2026-11-16T12:53:38Z";
+
+	OAK_ASSERT(signing::supersedes(newer, older));
+	OAK_ASSERT(signing::supersedes(newer, newer));
+	OAK_ASSERT(!signing::supersedes(older, newer));
+
+	// Nothing to protect yet: first download, or a file from before the time was recorded.
+	OAK_ASSERT(signing::supersedes(newer, ""));
+	OAK_ASSERT(signing::supersedes("", ""));
+	OAK_ASSERT(signing::supersedes(newer, "not a time"));
+
+	// A file without a usable time never replaces one that has it.
+	OAK_ASSERT(!signing::supersedes("", older));
+	OAK_ASSERT(!signing::supersedes("2026-11-16 12:53:38", older));
+	OAK_ASSERT(!signing::supersedes("9999", older));
+}
+
 void test_sha256 ()
 {
 	OAK_ASSERT_EQ(signing::sha256("", 0),    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
