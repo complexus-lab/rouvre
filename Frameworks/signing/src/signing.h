@@ -14,6 +14,13 @@ namespace signing
 	bool verify (void const* data, size_t length, void const* signature, size_t signatureLength, uint8_t const* publicKey = kReleasePublicKey);
 	bool verify (std::string const& data, std::string const& signature, uint8_t const* publicKey = kReleasePublicKey);
 
+	// A signature stays valid for ever, so a server can answer with an older
+	// signed file. Signed files carry the UTC time of their creation as
+	// YYYY-MM-DDTHH:MM:SSZ (mirror.created in the bundle index). This is true
+	// when candidate may replace current: current carries no such time, or
+	// candidate carries one that is not earlier.
+	bool supersedes (std::string const& candidate, std::string const& current);
+
 	// SHA-256 digests as lowercase hexadecimal, the form used in the bundle index.
 	struct sha256_t
 	{

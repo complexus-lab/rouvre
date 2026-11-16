@@ -9,6 +9,23 @@ static NSString* const OakHTTPHeaderSignature = @"x-amz-meta-x-signature";
 - (BOOL)data:(NSData*)contentData hasValidBase64EncodedSignature:(NSString*)encodedSignature usingPublicKeyString:(NSString*)publicKeyString;
 @end
 
+// Creation time a signed property list records (mirror.created), or the empty string.
+static std::string CreationTime (NSData* data)
+{
+	if(data)
+	{
+		id plist = [NSPropertyListSerialization propertyListWithData:data options:NSPropertyListImmutable format:nullptr error:nullptr];
+		if([plist isKindOfClass:[NSDictionary class]])
+		{
+			id mirror = plist[@"mirror"];
+			id created = [mirror isKindOfClass:[NSDictionary class]] ? mirror[@"created"] : nil;
+			if([created isKindOfClass:[NSString class]])
+				return [created UTF8String] ?: "";
+		}
+	}
+	return "";
+}
+
 static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 {
 	char buf[1024];
@@ -187,10 +204,9 @@ static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 
 - (void)URLSession:(NSURLSession*)session dataTask:(NSURLSessionDataTask*)dataTask didReceiveData:(NSData*)data
 {
-	NSFileHandle* fileHandle = self.extractorFileHandle;
-	if(fileHandle && !_progress.isCancelled)
+	if(!_progress.isCancelled)
 	{
-		[fileHandle writeData:data];
+		// Kept in memory: tar is given the archive once it has passed its check.
 		[_data appendData:data];
 
 		if(dataTask.countOfBytesExpectedToReceive != NSURLSessionTransferSizeUnknown)
@@ -231,13 +247,14 @@ static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 
 - (void)URLSession:(NSURLSession*)session task:(NSURLSessionTask*)dataTask didCompleteWithError:(NSError*)downloadError
 {
-	[_extractorFileHandle closeFile];
 	_progress.totalUnitCount = dataTask.countOfBytesReceived;
 
-	if(NSError* error = _extractorError ?: (_extractorTask ? downloadError : [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"Unable to launch tar." }]))
+	// tar is started here, and only for an archive that passed its check.
+	NSFileHandle* fileHandle;
+	if(downloadError)
 	{
-		os_log_error(OS_LOG_DEFAULT, "Failed to download %{public}@: %{public}@", dataTask.originalRequest.URL, error.localizedDescription);
-		_completionHandler(nil, error);
+		os_log_error(OS_LOG_DEFAULT, "Failed to download %{public}@: %{public}@", dataTask.originalRequest.URL, downloadError.localizedDescription);
+		_completionHandler(nil, downloadError);
 	}
 	else if(_expectedSHA256 && ![_expectedSHA256 isEqualToString:@(signing::sha256(_data.bytes, _data.length).c_str())])
 	{
@@ -249,8 +266,22 @@ static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 		os_log_error(OS_LOG_DEFAULT, "Unable to verify signature");
 		_completionHandler(nil, [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"Unable to verify signature." }]);
 	}
+	else if(!(fileHandle = self.extractorFileHandle))
+	{
+		NSError* error = _extractorError ?: [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"Unable to launch tar." }];
+		os_log_error(OS_LOG_DEFAULT, "Failed to extract %{public}@: %{public}@", dataTask.originalRequest.URL, error.localizedDescription);
+		_completionHandler(nil, error);
+	}
 	else
 	{
+		NSData* archive = _data;
+		dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+			NSError* error;
+			if(![fileHandle writeData:archive error:&error])
+				os_log_error(OS_LOG_DEFAULT, "Failed to send the archive to tar: %{public}@", error.localizedDescription);
+			[fileHandle closeFile];
+		});
+
 		dispatch_group_notify(_extractorDispatchGroup, dispatch_get_main_queue(), ^{
 			if(_extractorTask.terminationStatus == 0)
 			{
@@ -322,81 +353,6 @@ static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 	return _userAgentString;
 }
 
-- (void)downloadFileAtURL:(NSURL*)serverURL replacingFileAtURL:(NSURL*)localFileURL publicKeys:(NSDictionary<NSString*, NSString*>*)publicKeys completionHandler:(void(^)(BOOL wasUpdated, NSError* error))completionHandler
-{
-	NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:serverURL cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:60];
-	[request setValue:self.userAgentString forHTTPHeaderField:@"User-Agent"];
-
-	ssize_t size = getxattr(localFileURL.fileSystemRepresentation, "org.w3.http.etag", nullptr, 0, 0, 0);
-	if(size != -1)
-	{
-		if(NSMutableData* tempData = [NSMutableData dataWithLength:size])
-		{
-			getxattr(localFileURL.fileSystemRepresentation, "org.w3.http.etag", tempData.mutableBytes, tempData.length, 0, 0);
-			if(NSString* entityTag = [[NSString alloc] initWithData:tempData encoding:NSUTF8StringEncoding])
-			{
-				[request setValue:entityTag forHTTPHeaderField:@"If-None-Match"];
-				os_log(OS_LOG_DEFAULT, "GET %{public}@ using entity tag %{public}@", serverURL.absoluteString, entityTag);
-			}
-		}
-	}
-
-	NSURLSessionDataTask* dataTask = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error){
-		BOOL wasUpdated = NO;
-
-		NSInteger statusCode = ((NSHTTPURLResponse*)response).statusCode;
-		if(error || statusCode != 200)
-		{
-			if(!error && statusCode != 304)
-				error = [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Server returned %ld for %@", statusCode, serverURL.absoluteString] }];
-		}
-		else
-		{
-			NSString* signee    = ((NSHTTPURLResponse*)response).allHeaderFields[OakHTTPHeaderSignee];
-			NSString* signature = ((NSHTTPURLResponse*)response).allHeaderFields[OakHTTPHeaderSignature];
-			if(signee && signature)
-			{
-				if(NSString* publicKey = publicKeys[signee])
-				{
-					if([self data:data hasValidBase64EncodedSignature:signature usingPublicKeyString:publicKey])
-					{
-						if([data writeToURL:localFileURL options:NSDataWritingAtomic error:&error])
-						{
-							wasUpdated = YES;
-
-							if(NSString* newETag = ((NSHTTPURLResponse*)response).allHeaderFields[@"ETag"])
-							{
-								char const* str = newETag.UTF8String;
-								if(setxattr(localFileURL.fileSystemRepresentation, "org.w3.http.etag", str, strlen(str), 0, 0) == -1)
-									os_log_error(OS_LOG_DEFAULT, "setxattr(%{public}@): %{darwin.errno}d", localFileURL.path, errno);
-							}
-							else
-							{
-								os_log_error(OS_LOG_DEFAULT, "No ETag: %{public}@", serverURL.absoluteString);
-							}
-						}
-					}
-					else
-					{
-						error = [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"Unable to verify signature." }];
-					}
-				}
-				else
-				{
-					error = [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Unable to obtain public key for %@.", signee] }];
-				}
-			}
-			else
-			{
-				error = [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"Missing signature" }];
-			}
-		}
-
-		completionHandler(wasUpdated, error);
-	}];
-	[dataTask resume];
-}
-
 - (id <NSProgressReporting>)downloadArchiveAtURL:(NSURL*)serverURL forReplacingURL:(nullable NSURL*)localURL sha256:(NSString*)sha256 completionHandler:(void(^)(NSURL* extractedArchiveURL, NSError* error))completionHandler
 {
 	if(!sha256.length)
@@ -451,6 +407,12 @@ static NSString* GetHardwareInfo (int field, BOOL isInteger = NO)
 				if(!signing::verify(data.bytes, data.length, signature.bytes, signature.length))
 				{
 					error = [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"Unable to verify signature." }];
+				}
+				else if(!signing::supersedes(CreationTime(data), CreationTime([NSData dataWithContentsOfURL:localFileURL])))
+				{
+					// A valid signature does not make the file the latest one.
+					os_log_error(OS_LOG_DEFAULT, "Refusing %{public}@: older than the file in use", serverURL);
+					error = [NSError errorWithDomain:@"OakDownloadManager" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"The server sent an older file than the one in use." }];
 				}
 				else if([data writeToURL:localFileURL options:NSDataWritingAtomic error:&error])
 				{

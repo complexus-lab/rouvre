@@ -227,7 +227,10 @@ NSString* const kSoftwareUpdateChannelCanary                                   =
 	if(self = [super initWithNibName:nil bundle:nil])
 	{
 		_completionHandler      = completionHandler;
-		_publicKeys             = NSBundle.mainBundle.infoDictionary[@"TMSigningKeys"];
+		// No key: the upstream ones are gone and Rouvre has no release channel
+		// yet, so no downloaded update verifies. Releases will be checked
+		// with the release key, as the bundle index is (docs/INDEPENDENCE.md).
+		_publicKeys             = @{ };
 
 		_contentViewController  = [[OakTransitionViewController alloc] init];
 		_infoViewController     = [[SUInfoViewController alloc] init];

@@ -569,7 +569,7 @@ namespace
 			bundle.downloadURL         = [NSURL URLWithString:version[@"url"]];
 			bundle.downloadLastUpdated = version[@"updated"];
 			bundle.downloadSize        = [version[@"size"] intValue];
-			bundle.downloadSHA256      = version[@"sha256"];
+			bundle.downloadSHA256      = [version[@"sha256"] isKindOfClass:[NSString class]] ? version[@"sha256"] : nil;
 
 			NSMutableArray* grammars = [NSMutableArray array];
 			for(NSDictionary* info in item[@"grammars"])

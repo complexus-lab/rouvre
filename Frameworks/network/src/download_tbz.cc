@@ -18,7 +18,7 @@ namespace network
 	{
 		struct user_data_t
 		{
-			user_data_t (double* progress, double start_progress, double stop_progress, bool const* stop_flag, int tbz_fd, int tmp_fd) : progress(progress), start_progress(start_progress), stop_progress(stop_progress), stop_flag(stop_flag), tbz_fd(tbz_fd), tmp_fd(tmp_fd)
+			user_data_t (double* progress, double start_progress, double stop_progress, bool const* stop_flag, int tmp_fd) : progress(progress), start_progress(start_progress), stop_progress(stop_progress), stop_flag(stop_flag), tmp_fd(tmp_fd)
 			{
 			}
 
@@ -44,7 +44,6 @@ namespace network
 
 			std::string etag = NULL_STR;
 
-			int tbz_fd;
 			int tmp_fd;
 
 			signing::sha256_t digest;
@@ -95,11 +94,25 @@ namespace network
 		{
 			user_data_t& data = *static_cast<user_data_t*>(udata);
 
-			write(data.tbz_fd, ptr, size * nmemb);
 			write(data.tmp_fd, ptr, size * nmemb);
 			data.digest.update(ptr, size * nmemb);
 			data.receive(size * nmemb);
 			return data.should_stop() ? 0 : size * nmemb;
+		}
+
+		static std::string file_digest (std::string const& path)
+		{
+			signing::sha256_t digest;
+			int fd = open(path.c_str(), O_RDONLY|O_CLOEXEC);
+			if(fd == -1)
+				return NULL_STR;
+
+			char bytes[4096];
+			ssize_t len;
+			while((len = read(fd, bytes, sizeof(bytes))) > 0)
+				digest.update(bytes, len);
+			close(fd);
+			return len == 0 ? digest.hex_digest() : NULL_STR;
 		}
 	}
 
@@ -110,8 +123,6 @@ namespace network
 		{
 			std::string tbzDestination = path::cache("dl_archive_contents");
 			mkdir(tbzDestination.c_str(), S_IRWXU|S_IRWXG|S_IRWXO);
-			tbz_t tbz(tbzDestination);
-
 			std::string tmpPath = path::temp("dl_bytes");
 			int tmpInput = open(tmpPath.c_str(), O_CREAT|O_TRUNC|O_WRONLY|O_CLOEXEC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
 
@@ -119,7 +130,7 @@ namespace network
 			// = Curl =
 			// ========
 
-			user_data_t data(progress, progressStart, progressStop, stopFlag, tbz.input_fd(), tmpInput);
+			user_data_t data(progress, progressStart, progressStop, stopFlag, tmpInput);
 
 			curl_easy_setopt(handle, CURLOPT_URL,              url.c_str());
 			curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION,   true);
@@ -170,61 +181,67 @@ namespace network
 
 			close(tmpInput);
 
-			bool goodSignature = false;
-			if(serverReply == 200)
+			// tar is given the archive only once its digest is the one in the
+			// signed index. That holds for the copy kept from an earlier
+			// download too, which the server says has not changed (304).
+			bool verified = false;
+			if(serverReply == 200 || serverReply == 304)
 			{
-				std::string const digest = data.digest.hex_digest();
+				std::string const digest = serverReply == 200 ? data.digest.hex_digest() : file_digest(destination);
 				if(expectedSHA256.empty() || expectedSHA256 == NULL_STR)
-				{
 					error = "The bundle index lists no checksum for this archive.";
-				}
-				else if(digest != expectedSHA256)
-				{
+				else if(digest != text::lowercase(expectedSHA256))
 					error = text::format("Checksum mismatch: expected %s, got %s.", expectedSHA256.c_str(), digest.c_str());
-				}
 				else
-				{
-					goodSignature = true;
-					path::set_attr(tmpPath, kHTTPEntityTagAttribute, data.etag);
-					path::rename_or_copy(tmpPath, destination);
-				}
-			}
-			else if(serverReply == 304)
-			{
-				struct stat buf;
-				int fd = open(destination.c_str(), O_RDONLY|O_CLOEXEC);
-				if(fd != -1 && fstat(fd, &buf) != -1)
-				{
-					char bytes[4096];
-					data.total = buf.st_size;
-					while(data.received < data.total && !data.should_stop())
-					{
-						ssize_t len = read(fd, bytes, sizeof(bytes));
-						if(len == -1)
-							break;
+					verified = true;
 
-						write(tbz.input_fd(), bytes, len);
-						data.receive(len);
-					}
-					close(fd);
-				}
+				if(!verified && serverReply == 304)
+					unlink(destination.c_str()); // Or every later request is answered 304 again
 			}
 			else if(serverReply != 0)
 			{
 				error = text::format("Unexpected server reply (%ld).", serverReply);
 			}
 
-			if(!goodSignature) // If not, tmpPath has been moved to destination
-				unlink(tmpPath.c_str());
-
-			if(tbz.wait_for_tbz())
+			if(verified && serverReply == 200)
 			{
-				if(serverReply == 304 || goodSignature)
-					res = tbzDestination;
+				path::set_attr(tmpPath, kHTTPEntityTagAttribute, data.etag);
+				path::rename_or_copy(tmpPath, destination);
 			}
-			else if(serverReply == 200 || serverReply == 304)
+			else
 			{
-				error = "Extracting archive.";
+				unlink(tmpPath.c_str());
+			}
+
+			if(verified)
+			{
+				tbz_t tbz(tbzDestination);
+
+				struct stat buf;
+				int fd = open(destination.c_str(), O_RDONLY|O_CLOEXEC);
+				if(tbz && fd != -1 && fstat(fd, &buf) != -1)
+				{
+					if(serverReply == 304) // Nothing was downloaded: progress follows the extraction
+						data.total = buf.st_size;
+
+					char bytes[4096];
+					ssize_t len;
+					while(!data.should_stop() && (len = read(fd, bytes, sizeof(bytes))) > 0)
+					{
+						if(write(tbz.input_fd(), bytes, len) != len)
+							break;
+						if(serverReply == 304)
+							data.receive(len);
+					}
+				}
+
+				if(fd != -1)
+					close(fd);
+
+				if(tbz.wait_for_tbz() && !data.should_stop())
+					res = tbzDestination;
+				else
+					error = data.should_stop() ? "Download stopped." : "Extracting archive.";
 			}
 
 			if(res == NULL_STR)

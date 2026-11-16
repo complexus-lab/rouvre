@@ -4,6 +4,7 @@
 #include <io/move_path.h>
 #include <io/entries.h>
 #include <network/download_tbz.h>
+#include <signing/signing.h>
 #include <plist/ascii.h>
 #include <text/format.h>
 #include <text/ctype.h>
@@ -56,6 +57,19 @@ namespace bundles_db
 		std::string path = download_etag(source->url(), &etag, progress, min, max);
 		if(path != NULL_STR)
 		{
+			// The signature does not say which index is the latest: refuse one
+			// that was created before the index already in use.
+			std::string candidate, current;
+			plist::get_key_path(plist::load(path), "mirror.created", candidate);
+			plist::get_key_path(plist::load(source->path()), "mirror.created", current);
+			if(!signing::supersedes(candidate, current))
+			{
+				os_log_error(OS_LOG_DEFAULT, "Refusing ‘%{public}s’: created %{public}s, older than the index in use (%{public}s)", source->url().c_str(), candidate.c_str(), current.c_str());
+				path::remove(path);
+				path::set_attr(source->path(), "last-check", to_s(oak::date_t::now()));
+				return false;
+			}
+
 			path::set_attr(path, "org.w3.http.etag", etag);
 			path::rename_or_copy(path, source->path());
 		}
